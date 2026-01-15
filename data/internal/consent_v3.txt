@@ -1,1 +1,7 @@
-Consent v3: latest internal revision.
+Title: Medical Treatment Consent
+
+I agree to undergo the recommended medical procedure as advised by the healthcare provider. The general purpose and expected outcome of the treatment have been explained to me.
+
+I understand that medical procedures may involve risks, although not all details have been discussed. I am aware that I may choose not to continue treatment. Information related to my care may be documented for hospital use.
+
+I consent to proceed with the procedure.

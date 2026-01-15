@@ -1,8 +1,8 @@
-doc_id,filename,version,date
-guideline_01,guideline_01.txt,1,2025-01-01
-guideline_02,guideline_02.txt,1,2025-01-02
-guideline_03,guideline_03.txt,1,2025-01-03
-consent_v1,consent_v1.txt,1,2024-06-01
-consent_v2,consent_v2.txt,2,2024-09-01
-consent_v3,consent_v3.txt,3,2025-01-01
-sop_v1,sop_v1.txt,1,2024-07-01
+doc_id,filename,doc_type,version,date
+guideline_01,guideline_01.txt,reference,1,2025-01-01
+guideline_02,guideline_02.txt,reference,1,2025-01-02
+guideline_03,guideline_03.txt,reference,1,2025-01-03
+consent,consent_v1.txt,internal,1,2024-06-01
+consent,consent_v2.txt,internal,2,2024-09-01
+consent,consent_v3.txt,internal,3,2025-01-01
+sop,sop_v1.txt,internal,1,2024-07-01

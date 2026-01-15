@@ -1,3 +1,7 @@
-SOP v1: standard operating procedure placeholder.
+Title: Consent Statement
 
-Replace with organization SOP text.
+I give permission for the hospital to carry out the procedure.
+
+I understand treatment will be provided.
+
+I agree to proceed.

@@ -1,1 +1,7 @@
-Consent v2: updated consent language with minor edits.
+Title: Patient Consent and Authorization
+
+I confirm that I have received clear and sufficient information regarding the medical procedure, including its risks, benefits, and possible alternatives. I understand that informed consent is legally required and that I may withdraw consent at any stage prior to the procedure.
+
+I understand my rights as a patient and acknowledge that all medical records and personal data will be maintained confidentially in compliance with regulatory and ethical standards. This consent is provided voluntarily and without pressure.
+
+I agree to proceed with the treatment as explained.

@@ -1,4 +1,5 @@
-Guideline 01: Data handling and consent requirements.
-
-This is a placeholder for the regulatory guideline 01.
-Please replace with the real guideline text.
+Informed consent must be obtained from all patients prior to any medical procedure.
+Patients must be informed of potential risks, benefits, and alternative treatments.
+Consent documents must clearly state patient rights, including the right to withdraw consent.
+Confidentiality of patient data must be maintained at all times.
+Medical procedures must comply with applicable ethical standards and regulations.

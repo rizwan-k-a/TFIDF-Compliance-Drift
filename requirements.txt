@@ -1,5 +1,8 @@
 numpy
+scipy
 pandas
 scikit-learn
+matplotlib
+spacy
 streamlit
-jupyter
+notebook
