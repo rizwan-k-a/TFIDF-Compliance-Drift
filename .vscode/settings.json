@@ -3,6 +3,10 @@
     "python-envs.pythonProjects": [],
     "cSpell.words": [
         "kmeans",
-        "tfidf"
+        "pdfplumber",
+        "tfidf",
+        "vecs",
+        "xlabel",
+        "ylabel"
     ]
 }

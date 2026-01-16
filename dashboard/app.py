@@ -1,62 +1,58 @@
+# ============================================================
+# LEGAL COMPLIANCE SIMILARITY & DRIFT REVIEW DASHBOARD
+# MCA Final Project – Decision Support + Academic Demonstration
+# ============================================================
+
 import sys
 import os
-import textwrap
-from datetime import datetime
+from io import BytesIO
 
-# -------------------------------------------------
+# ------------------------------------------------------------
 # PATH SETUP
-# -------------------------------------------------
+# ------------------------------------------------------------
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 SRC_DIR = os.path.join(BASE_DIR, "src")
+DATA_DIR = os.path.join(BASE_DIR, "data")
 
 if SRC_DIR not in sys.path:
     sys.path.append(SRC_DIR)
 
-# -------------------------------------------------
+# ------------------------------------------------------------
 # IMPORTS
-# -------------------------------------------------
+# ------------------------------------------------------------
 import streamlit as st
 import pandas as pd
+import numpy as np
+import pdfplumber
+import matplotlib.pyplot as plt
+import seaborn as sns
 
-from vectorize import load_documents, build_tfidf_vectors
+from vectorize import build_tfidf_vectors
 from similarity import compute_cosine_similarity
 from drift import compute_drift
 from alerts import generate_alerts
-from src.manual_tfidf_math import get_manual_tfidf_output
+from manual_tfidf_math import get_manual_tfidf_output
 
-from sklearn.cluster import KMeans
 from fpdf import FPDF
+from sklearn.metrics.pairwise import cosine_similarity
 
-# -------------------------------------------------
+# ------------------------------------------------------------
 # PAGE CONFIG
-# -------------------------------------------------
+# ------------------------------------------------------------
 st.set_page_config(
-    page_title="Compliance Similarity Review",
-    page_icon="📄",
+    page_title="Legal Compliance Similarity Review",
+    page_icon="⚖️",
     layout="wide"
 )
 
-# -------------------------------------------------
-# BASIC STYLES
-# -------------------------------------------------
-st.markdown("""
-<style>
-.block-container { padding-top: 1.5rem; max-width: 1400px; }
-.card {
-    background: #ffffff;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    padding: 18px;
-}
-.kpi-title { font-size: 14px; color: #374151; }
-.kpi-value { font-size: 30px; font-weight: 700; }
-.help { font-size: 15px; color: #374151; line-height: 1.6; }
-</style>
-""", unsafe_allow_html=True)
+# ------------------------------------------------------------
+# GLOBAL CONSTANTS
+# ------------------------------------------------------------
+DEFAULT_DIVERGENCE_THRESHOLD = 40  # professional baseline
 
-# -------------------------------------------------
-# SIDEBAR — ROLE
-# -------------------------------------------------
+# ------------------------------------------------------------
+# SIDEBAR — ROLE SELECTION
+# ------------------------------------------------------------
 st.sidebar.title("User Role")
 
 role = st.sidebar.radio(
@@ -65,221 +61,301 @@ role = st.sidebar.radio(
 )
 
 st.sidebar.caption(
-    "Compliance Tester: Reviews wording similarity\n"
-    "System Admin: Adjusts thresholds and exports reports"
+    "Compliance Tester: Legal review & prioritization\n\n"
+    "System Admin: Data science & mathematical explanation"
 )
 
-# -------------------------------------------------
-# HEADER
-# -------------------------------------------------
-st.title("Compliance Similarity Review")
-
-st.markdown(
-    "<div class='help'>"
-    "<b>What this screen shows:</b><br>"
-    "Internal wording is compared with reference regulations to measure similarity.<br><br>"
-    "<b>How to read the percentage:</b><br>"
-    "Higher percentage = wording closer to regulation.<br>"
-    "Lower percentage = wording more different from regulation."
-    "</div>",
-    unsafe_allow_html=True
-)
-
-st.divider()
-
-# -------------------------------------------------
-# LOAD DATA
-# -------------------------------------------------
-reference_path = os.path.join(BASE_DIR, "data", "reference")
-internal_path = os.path.join(BASE_DIR, "data", "internal")
-metadata_path = os.path.join(BASE_DIR, "data", "metadata.csv")
-
-ref_docs, ref_names = load_documents(reference_path)
-int_docs, int_names = load_documents(internal_path)
-
-if not ref_docs or not int_docs:
-    st.error("Reference or internal document folders are empty.")
-    st.stop()
-
-# -------------------------------------------------
-# CORE PROCESSING
-# -------------------------------------------------
-_, ref_vectors, int_vectors = build_tfidf_vectors(ref_docs, int_docs)
-
-similarity_df = compute_cosine_similarity(
-    ref_vectors,
-    int_vectors,
-    int_names
-)
-
-drift_df = compute_drift(similarity_df, metadata_path)
-
-# -------------------------------------------------
-# THRESHOLD CONTROL
-# -------------------------------------------------
-if role == "System Admin":
-    threshold = st.slider(
-        "Similarity drop that triggers a review",
-        -0.30, 0.0, -0.05, 0.01
-    )
+# ------------------------------------------------------------
+# ROLE-SPECIFIC HEADER
+# ------------------------------------------------------------
+if role == "Compliance Tester":
+    st.markdown("""
+    <h1>⚖️ Legal Compliance Review</h1>
+    <p style="opacity:0.75; max-width:900px;">
+    Decision-support dashboard to identify which legal or policy documents
+    require review based on wording divergence from selected guidelines.
+    </p>
+    <p style="opacity:0.6;">
+    <b>Disclaimer:</b> This system supports legal judgment.
+    It does not certify compliance or replace legal advice.
+    </p>
+    <hr style="opacity:0.3;">
+    """, unsafe_allow_html=True)
 else:
-    threshold = -0.05
-    st.info("Standard review threshold is being used.")
+    st.markdown("""
+    <h1>📊 Data Science & Mathematical Analysis</h1>
+    <p style="opacity:0.75; max-width:900px;">
+    Academic view exposing the TF-IDF, similarity computation,
+    divergence modeling, and explainability layers of the system.
+    </p>
+    <hr style="opacity:0.3;">
+    """, unsafe_allow_html=True)
 
-alerts_df = generate_alerts(drift_df, threshold)
+# ============================================================
+# DOCUMENT LOADING UTILITIES
+# ============================================================
+def read_uploaded_files(files):
+    texts, names = [], []
+    for f in files:
+        if f.name.lower().endswith(".txt"):
+            text = f.read().decode("utf-8", errors="ignore")
+        elif f.name.lower().endswith(".pdf"):
+            text = ""
+            with pdfplumber.open(f) as pdf:
+                for page in pdf.pages:
+                    text += page.extract_text() or ""
+        else:
+            continue
+        texts.append(text)
+        names.append(f.name)
+    return texts, names
 
-# -------------------------------------------------
-# INTERPRETATION
-# -------------------------------------------------
-alerts_df["similarity_percent"] = (alerts_df["compliance_score"] * 100).round(1)
 
-def priority_label(p):
-    if p >= 25:
-        return "Low Review Priority"
-    elif p >= 10:
-        return "Medium Review Priority"
-    else:
-        return "High Review Priority"
+def load_default_docs(folder):
+    texts, names = [], []
+    for fname in sorted(os.listdir(folder)):
+        if fname.endswith(".txt"):
+            with open(
+                os.path.join(folder, fname),
+                "r",
+                encoding="utf-8",
+                errors="ignore"
+            ) as f:
+                texts.append(f.read())
+                names.append(fname)
+    return texts, names
 
-def meaning_text(p):
-    if p >= 25:
-        return "Very similar wording. No action needed."
-    elif p >= 10:
-        return "Some wording differences. Review later."
-    else:
-        return "Very different wording. Review urgently."
 
-alerts_df["priority"] = alerts_df["similarity_percent"].apply(priority_label)
-alerts_df["meaning"] = alerts_df["similarity_percent"].apply(meaning_text)
+# ============================================================
+# PDF GENERATION
+# ============================================================
+def generate_audit_pdf(results_df, summary_text):
+    buffer = BytesIO()
 
-# -------------------------------------------------
-# PRIORITY GROUPS
-# -------------------------------------------------
-high = alerts_df[alerts_df["priority"] == "High Review Priority"]
-medium = alerts_df[alerts_df["priority"] == "Medium Review Priority"]
-low = alerts_df[alerts_df["priority"] == "Low Review Priority"]
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Helvetica", size=12)
 
-# -------------------------------------------------
-# HUMAN-READABLE DECISION EXPLANATION (KEY ADDITION)
-# -------------------------------------------------
-if len(high) > 0:
-    worst = high.sort_values("similarity_percent").iloc[0]
-    others = alerts_df[alerts_df["filename"] != worst["filename"]]
+    pdf.multi_cell(0, 8, "Legal Compliance Similarity Audit Report\n")
+    pdf.multi_cell(0, 8, summary_text)
+    pdf.ln(6)
 
-    avg_other_sim = round(others["similarity_percent"].mean(), 1)
-    worst_not_similar = round(100 - worst["similarity_percent"], 1)
-    others_not_similar = round(100 - avg_other_sim, 1)
+    for _, r in results_df.iterrows():
+        pdf.multi_cell(
+            0,
+            8,
+            f"""Document: {r['internal_document']}
+Similarity: {r['similarity_percent']}%
+Divergence: {r['divergence_percent']}%
+Risk: {r['risk']}
+"""
+        )
+        pdf.ln(2)
 
-    st.error(
-        f"🚨 **THIS is the main problem**\n\n"
-        f"**{worst['filename']}** is **{worst_not_similar}% NOT similar** to the regulation.\n\n"
-        f"Other documents are only about **{others_not_similar}% NOT similar**.\n\n"
-        f"👉 This file is much more different than the others, "
-        f"which is why it must be reviewed first."
+    pdf.output(buffer)
+    buffer.seek(0)
+    return buffer
+
+
+# ============================================================
+# COMPLIANCE TESTER VIEW
+# ============================================================
+if role == "Compliance Tester":
+
+    st.header("📄 Upload Internal Documents")
+
+    uploaded_internal = st.file_uploader(
+        "Upload internal legal / policy documents (TXT or PDF)",
+        type=["txt", "pdf"],
+        accept_multiple_files=True
     )
 
-elif len(medium) > 0:
-    st.warning(
-        f"⚠️ **Some differences found**\n\n"
-        f"{len(medium)} document(s) have moderate wording differences.\n"
-        f"They are not the main problem, but should be reviewed later."
+    st.header("⚖️ Select Reference Guidelines")
+    st.caption("Select up to two guidelines (default or uploaded).")
+
+    default_guidelines, default_names = load_default_docs(
+        os.path.join(DATA_DIR, "reference")
     )
+
+    selected_guidelines = {}
+    cols = st.columns(3)
+
+    for i, name in enumerate(default_names):
+        with cols[i % 3]:
+            if st.checkbox(name):
+                selected_guidelines[name] = default_guidelines[i]
+
+    st.subheader("Upload Custom Guidelines (Optional)")
+    uploaded_guidelines = st.file_uploader(
+        "Upload guideline files (TXT or PDF)",
+        type=["txt", "pdf"],
+        accept_multiple_files=True
+    )
+
+    if uploaded_guidelines:
+        g_texts, g_names = read_uploaded_files(uploaded_guidelines)
+        for n, t in zip(g_names, g_texts):
+            selected_guidelines[n] = t
+
+    if len(selected_guidelines) > 2:
+        st.error("Please select no more than two guidelines.")
+
+    run = st.button("▶️ Run Legal Comparison")
+
+    if run and uploaded_internal and selected_guidelines:
+
+        with st.spinner("Analyzing documents..."):
+            int_docs, int_names = read_uploaded_files(uploaded_internal)
+            ref_docs = list(selected_guidelines.values())
+
+            _, ref_vecs, int_vecs = build_tfidf_vectors(ref_docs, int_docs)
+            sim_df = compute_cosine_similarity(ref_vecs, int_vecs, int_names)
+
+            sim_df["similarity_percent"] = (sim_df["compliance_score"] * 100).round(1)
+            sim_df["divergence_percent"] = (100 - sim_df["similarity_percent"]).round(1)
+
+        def risk_label(div):
+            if div <= 20:
+                return "Safe – Closely Aligned"
+            elif div <= DEFAULT_DIVERGENCE_THRESHOLD:
+                return "Needs Attention"
+            else:
+                return "Review Required"
+
+        sim_df["risk"] = sim_df["divergence_percent"].apply(risk_label)
+
+        st.subheader("Detailed Results")
+        st.dataframe(sim_df, use_container_width=True)
+
+
+# ============================================================
+# SYSTEM ADMIN VIEW (ACADEMIC)
+# ============================================================
 else:
-    st.success(
-        "✅ **No immediate issue**\n\n"
-        "All documents are very close to the regulation.\n"
-        "No action is required right now."
+
+    internal_docs, internal_names = load_default_docs(
+        os.path.join(DATA_DIR, "internal")
+    )
+    guideline_docs, guideline_names = load_default_docs(
+        os.path.join(DATA_DIR, "reference")
     )
 
-st.divider()
+    st.header("Select Documents for Analysis")
 
-# -------------------------------------------------
-# OVERALL SUMMARY
-# -------------------------------------------------
-st.header("Overall Review Summary")
-
-c1, c2, c3, c4 = st.columns(4)
-
-with c1:
-    st.markdown(
-        f"<div class='card'><div class='kpi-title'>High Priority</div>"
-        f"<div class='kpi-value'>{len(high)}</div></div>",
-        unsafe_allow_html=True
+    sel_internal = st.multiselect(
+        "Internal documents",
+        internal_names,
+        default=internal_names
     )
 
-with c2:
-    st.markdown(
-        f"<div class='card'><div class='kpi-title'>Medium Priority</div>"
-        f"<div class='kpi-value'>{len(medium)}</div></div>",
-        unsafe_allow_html=True
+    sel_guidelines = st.multiselect(
+        "Reference guidelines",
+        guideline_names,
+        default=guideline_names[:2]
     )
 
-with c3:
-    st.markdown(
-        f"<div class='card'><div class='kpi-title'>Low Priority</div>"
-        f"<div class='kpi-value'>{len(low)}</div></div>",
-        unsafe_allow_html=True
+    st.header("⚖️ Legal Risk Threshold (Admin Only)")
+    divergence_threshold = st.slider(
+        "Maximum acceptable wording divergence (%)",
+        20, 80, DEFAULT_DIVERGENCE_THRESHOLD, 5
     )
 
-with c4:
-    st.markdown(
-        f"<div class='card'><div class='kpi-title'>Average Similarity</div>"
-        f"<div class='kpi-value'>{alerts_df['similarity_percent'].mean():.1f}%</div></div>",
-        unsafe_allow_html=True
-    )
+    run_admin = st.button("▶️ Run Admin Analysis")
 
-# -------------------------------------------------
-# ADMIN: TF-IDF CLUSTERING DEMO
-# -------------------------------------------------
-if role == "System Admin":
-    st.divider()
-    st.header("🔬 TF-IDF Matrix Based Clustering (Demonstration)")
+    if run_admin:
 
-    kmeans = KMeans(n_clusters=2, random_state=42)
-    clusters = kmeans.fit_predict(int_vectors)
+        with st.spinner("Running TF-IDF and similarity analysis..."):
 
-    st.dataframe(
-        pd.DataFrame({
-            "Document": int_names,
-            "Cluster": clusters
-        }),
-        width="stretch"
-    )
+            int_docs = [internal_docs[internal_names.index(n)] for n in sel_internal]
+            ref_docs = [guideline_docs[guideline_names.index(n)] for n in sel_guidelines]
 
-    st.caption(
-        "Clustering is shown only as a Data Science demonstration. "
-        "It does not affect compliance decisions."
-    )
+            _, ref_vecs, int_vecs = build_tfidf_vectors(ref_docs, int_docs)
+            sim_df = compute_cosine_similarity(ref_vecs, int_vecs, sel_internal)
 
-# -------------------------------------------------
-# ADMIN: MANUAL TF-IDF MATH
-# -------------------------------------------------
-if role == "System Admin":
-    st.divider()
-    st.header("📐 Mathematical Demonstration (Manual TF-IDF)")
+            sim_df["similarity_percent"] = (sim_df["compliance_score"] * 100).round(1)
+            sim_df["divergence_percent"] = (100 - sim_df["similarity_percent"]).round(1)
 
-    with st.expander("View Manual TF-IDF Computation"):
-        math_output = get_manual_tfidf_output()
+            # ----------------------------------------------------
+            # ADD RISK LABELS (FIXED INDENTATION ONLY)
+            # ----------------------------------------------------
+            def risk_label(div):
+                if div <= 20:
+                    return "Safe – Closely Aligned"
+                elif div <= DEFAULT_DIVERGENCE_THRESHOLD:
+                    return "Needs Attention"
+                else:
+                    return "Review Required"
 
-        st.subheader("Sample Documents")
-        st.json(math_output["documents"])
+            sim_df["risk"] = sim_df["divergence_percent"].apply(risk_label)
 
-        st.subheader("Term Frequency (TF)")
-        st.json(math_output["TF"])
+        col1, col2 = st.columns(2)
 
-        st.subheader("Inverse Document Frequency (IDF)")
-        st.json(math_output["IDF"])
+        with col1:
+            st.subheader("Similarity Heatmap")
+            fig, ax = plt.subplots(figsize=(6, 4))
+            sns.heatmap(
+                cosine_similarity(int_vecs, ref_vecs) * 100,
+                xticklabels=sel_guidelines,
+                yticklabels=sel_internal,
+                annot=True,
+                fmt=".1f",
+                cmap="Blues",
+                linewidths=0.5,
+                cbar_kws={"shrink": 0.7},
+                ax=ax
+            )
+            plt.tight_layout()
+            st.pyplot(fig)
 
-        st.subheader("TF-IDF Weights")
-        st.json(math_output["TF-IDF"])
+        with col2:
+            st.subheader("Divergence per Document")
+            fig2, ax2 = plt.subplots(figsize=(6, 4))
+            ax2.bar(sel_internal, sim_df["divergence_percent"])
+            ax2.axhline(divergence_threshold, linestyle="--")
+            ax2.set_ylabel("Divergence (%)")
+            plt.xticks(rotation=30, ha="right")
+            plt.tight_layout()
+            st.pyplot(fig2)
+
+        st.subheader("Manual TF / IDF / TF-IDF Demonstration")
+
+        math = get_manual_tfidf_output()
+        st.markdown("**Term Frequency (TF)**")
+        st.json(math["TF"])
+        st.markdown("**Inverse Document Frequency (IDF)**")
+        st.json(math["IDF"])
+        st.markdown("**TF-IDF Weights**")
+        st.json(math["TF-IDF"])
 
         st.info(
-            "This manual calculation is included only to demonstrate "
-            "the mathematical foundation of TF-IDF."
+            "TF measures importance within a document. "
+            "IDF reduces the impact of common legal terms. "
+            "TF-IDF balances both to highlight discriminative wording."
         )
 
-# -------------------------------------------------
+        st.subheader("Export Audit Summary (PDF)")
+
+        summary_text = (
+            f"Documents analyzed: {len(sel_internal)}\n"
+            f"Guidelines used: {len(sel_guidelines)}\n"
+            f"Divergence threshold: {divergence_threshold}%"
+        )
+
+        pdf_buffer = generate_audit_pdf(sim_df, summary_text)
+
+        st.download_button(
+            label="📄 Download Audit PDF",
+            data=pdf_buffer,
+            file_name="audit_summary.pdf",
+            mime="application/pdf"
+        )
+
+# ------------------------------------------------------------
 # FOOTER
-# -------------------------------------------------
-st.divider()
-st.caption("Compliance Similarity Review — Decision Support Tool")
+# ------------------------------------------------------------
+st.markdown(
+    "<hr><p style='text-align:center; opacity:0.5;'>"
+    "Legal Compliance Similarity Review — MCA Final Project"
+    "</p>",
+    unsafe_allow_html=True
+)
