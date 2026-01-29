@@ -1,0 +1,151 @@
+INFORMATION SECURITY INCIDENT RESPONSE PLAN v1.0
+
+PURPOSE
+To establish coordinated and effective procedures for detecting, reporting, investigating, and responding to information security incidents in compliance with Information Technology Act, 2021 and organizational security policies.
+
+SCOPE
+All personnel involved in IT operations, security, management, and relevant departments responsible for incident response.
+
+INCIDENT RESPONSE FRAMEWORK
+
+1. INCIDENT CLASSIFICATION
+1.1 Severity Levels:
+    - Level 1 (Critical): Widespread system outage, data breach affecting >1000 individuals, ransomware detected, major security breach
+    - Level 2 (High): Significant system unavailability, data compromise of sensitive information, unauthorized access detected
+    - Level 3 (Medium): Limited system impact, unsuccessful access attempts, configuration errors affecting security controls
+    - Level 4 (Low): Minor security gaps, informational alerts, routine security warnings
+
+1.2 Incident Categories:
+    - Malware/Virus infection
+    - Unauthorized access/intrusion
+    - Data theft/loss
+    - Denial of Service attacks
+    - System misconfiguration
+    - Compliance violations
+    - Accidental data exposure
+
+2. INCIDENT DETECTION AND REPORTING
+2.1 Detection Methods:
+    - Automated security monitoring systems
+    - User reporting of suspicious activity
+    - System alerts and notifications
+    - Log review and analysis
+    - Third-party vulnerability disclosures
+
+2.2 Reporting Requirements:
+    - Incidents reported immediately to IT Security team
+    - Initial report includes:
+      * Incident discovery time and reporter identity
+      * Affected systems/data and number of potentially impacted users
+      * Incident description and severity assessment
+      * Actions already taken (if any)
+    - Formal incident ticket created within 1 hour of report
+
+3. INCIDENT RESPONSE TEAM AND ROLES
+3.1 Team Composition:
+    - Incident Commander (coordinates overall response)
+    - Security Lead (investigation direction)
+    - System Administrator (technical remediation)
+    - Network Engineer (network isolation/monitoring)
+    - Legal/Compliance Officer (regulatory obligations)
+    - Communications Lead (internal/external notifications)
+
+3.2 Activation Protocol:
+    - Level 1 incidents: Immediate full team activation
+    - Level 2 incidents: Team activated within 30 minutes
+    - Level 3 incidents: Relevant team members engaged
+    - Level 4 incidents: Standard support protocols apply
+
+4. INVESTIGATION AND CONTAINMENT
+4.1 Immediate Containment (First 2 Hours):
+    - Affected systems isolated from production network if necessary
+    - Preserve evidence (no systems cleaned/reset without preservation)
+    - Block suspicious user accounts if unauthorized access confirmed
+    - Disable compromised services if critical impact
+    - Isolate affected workstations from network access
+
+4.2 Forensic Investigation:
+    - Memory dumps collected from affected systems
+    - Hard drives imaged or isolated for analysis
+    - Log files collected and preserved (server, firewall, IDS/IPS)
+    - Network traffic captured if still occurring
+    - Evidence chain of custody maintained
+
+4.3 Investigation Activities (4-24 Hours):
+    - Timeline of incident established
+    - Attack vectors identified
+    - Scope of compromise determined
+    - Root cause analysis initiated
+    - Damage assessment completed
+
+5. NOTIFICATION AND REPORTING
+5.1 Internal Notification (Within 2 Hours for Level 1):
+    - Executive management notified
+    - Affected department heads informed
+    - Legal team engaged
+    - Board notification if material breach
+
+5.2 External Notification (Compliance Required):
+    - Data subjects notified if PII compromised (per IT Act 2021)
+    - Regulators notified within prescribed timeframe
+    - Law enforcement contacted if criminal activity
+    - Affected service providers notified
+
+5.3 Documentation:
+    - Incident report prepared with findings
+    - Detailed timeline created
+    - Evidence exhibits attached
+    - Remediation steps outlined
+
+6. REMEDIATION AND RECOVERY
+6.1 Short-term Recovery (24-72 Hours):
+    - Vulnerabilities patched or mitigated
+    - Compromised accounts reset with new credentials
+    - Affected systems restored from clean backups
+    - Enhanced monitoring implemented
+    - Access controls tightened
+
+6.2 Long-term Improvements:
+    - Root cause analysis completed
+    - Security controls enhanced
+    - Policy/procedure updates implemented
+    - Training provided to prevent recurrence
+    - Security posture assessment conducted
+
+7. COMMUNICATION PROTOCOLS
+7.1 Internal Communication:
+    - Daily situation reports during active incident
+    - Executive briefings for Level 1 incidents
+    - User communication regarding service restoration
+    - Post-incident review meeting scheduled
+
+7.2 External Communication:
+    - Unified response message developed
+    - Regulatory notifications prepared
+    - Customer communications coordinated
+    - Third-party notifications issued
+
+8. LESSONS LEARNED AND IMPROVEMENT
+8.1 Post-Incident Review (Within 1 Week):
+    - Team debriefing conducted
+    - Timeline validated
+    - Response effectiveness assessed
+    - Gaps identified
+
+8.2 Improvements Implementation:
+    - Security controls enhanced based on findings
+    - Procedures updated to prevent recurrence
+    - Training curriculum revised
+    - Incident response plan updated
+    - Monitoring rules refined
+
+COMPLIANCE AND LEGAL REQUIREMENTS
+This plan ensures compliance with Information Technology Act, 2021 incident notification requirements, IT Rules 2021, and organizational governance policies. Incidents involving data breach must be reported to data subjects and regulators as prescribed.
+
+ESCALATION CONTACTS
+- IT Security Lead: [contact]
+- Chief Information Security Officer: [contact]
+- Legal Department: [contact]
+- Executive Management: [contact]
+
+Last Updated: January 2026

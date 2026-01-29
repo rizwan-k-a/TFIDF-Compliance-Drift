@@ -1,0 +1,70 @@
+FINANCIAL TRANSACTION MONITORING POLICY v1.0
+
+PURPOSE
+To establish systematic monitoring and controls over financial transactions to prevent money laundering, fraud, and unauthorized fund transfers in compliance with Prevention of Money Laundering Act (PMLA), 2002.
+
+SCOPE
+All financial transactions conducted by the organization, including payments, receipts, transfers, and settlements.
+
+MONITORING FRAMEWORK
+
+1. TRANSACTION CLASSIFICATION SYSTEM
+1.1 All transactions categorized by:
+    - Amount threshold (micro/small/medium/large)
+    - Transaction type (domestic/international)
+    - Counterparty category (known/unknown/high-risk)
+    - Business purpose classification
+
+1.2 Risk scoring algorithm applied:
+    - Transactions exceeding defined thresholds flagged automatically
+    - Unusual patterns detected through statistical analysis
+    - High-risk jurisdiction transactions require enhanced scrutiny
+
+2. THRESHOLD MONITORING
+2.1 Transactions exceeding INR 10 lakhs subject to enhanced verification:
+    - Purpose documentation required
+    - Counterparty identity verification
+    - Supporting invoice/contract review
+    - Approval from designated authority
+
+2.2 Cumulative transaction monitoring:
+    - Daily aggregate limits monitored
+    - Monthly transaction volume reviewed
+    - Unusual spike patterns escalated
+
+3. SUSPICIOUS TRANSACTION REPORTING
+3.1 Suspicious transactions identified if:
+    - Inconsistent with customer profile
+    - Structuring patterns observed
+    - High-risk jurisdictions involved
+    - Weak Know Your Customer (KYC) documentation
+
+3.2 Internal reporting requirements:
+    - Flagged transaction documented within 24 hours
+    - Escalated to Compliance Officer for assessment
+    - Suspicious Activity Report (SAR) prepared if warranted
+    - Filed with Financial Intelligence Unit if required
+
+4. DOCUMENTATION AND AUDIT TRAIL
+4.1 All monitoring activities logged:
+    - Transaction ID, amount, counterparty
+    - Risk assessment score
+    - Approval authority
+    - Monitoring conclusion
+
+4.2 Records maintained for minimum 5 years:
+    - Secure encrypted storage required
+    - Access restricted to authorized personnel only
+    - Audit trail maintained for all record access
+
+5. ENHANCED DUE DILIGENCE
+5.1 High-risk transactions require:
+    - Source of funds verification
+    - Beneficial ownership documentation
+    - Business purpose detailed explanation
+    - Director/management approval
+
+REGULATORY COMPLIANCE
+This policy ensures compliance with Prevention of Money Laundering Act, 2002 and related guidelines issued by financial regulators.
+
+Last Updated: January 2026

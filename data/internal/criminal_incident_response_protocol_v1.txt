@@ -1,0 +1,60 @@
+CRIMINAL INCIDENT RESPONSE PROTOCOL v1.0
+
+PURPOSE
+To establish rapid and coordinated response procedures for criminal incidents affecting organizational assets, personnel, or operations.
+
+SCOPE
+All employees and contractors must adhere to this protocol for any criminal incident discovery or reporting.
+
+INCIDENT RESPONSE FRAMEWORK
+
+1. IMMEDIATE RESPONSE (0-2 HOURS)
+1.1 Upon discovery of criminal incident:
+    - Evacuate affected area if safety risk present
+    - Preserve evidence and scene integrity
+    - Contact local law enforcement immediately
+    - Document initial observations without contaminating evidence
+
+1.2 Notify incident response team leader and management chain:
+    - Provide incident classification (fraud, theft, cybercrime, violence, etc.)
+    - Specify location and affected parties
+    - Report estimated impact scope
+
+1.3 Secure all physical evidence:
+    - Do not move or handle evidence unnecessarily
+    - Establish perimeter to prevent unauthorized access
+    - Assign evidence custodian for continuity
+
+2. INVESTIGATION COORDINATION (2-24 HOURS)
+2.1 Establish incident command post with:
+    - Police liaison
+    - Internal legal representative
+    - Incident coordinator
+    - Relevant department heads
+
+2.2 Conduct preliminary investigation:
+    - Interview initial witnesses (documented with written consent)
+    - Photograph scenes and evidence
+    - Secure digital evidence and systems
+    - Prepare case package for law enforcement
+
+2.3 Victim support:
+    - Medical assistance arranged if needed
+    - Psychological support resources offered
+    - Communication protocol established
+
+3. DOCUMENTATION REQUIREMENTS
+3.1 All incident communications logged with timestamps.
+3.2 Witness statements recorded (audio preferred, transcribed within 24 hours).
+3.3 Evidence inventory maintained with photographic documentation.
+3.4 External communications logged including police case numbers.
+
+4. FOLLOW-UP COORDINATION
+4.1 Designated liaison assigned to law enforcement for ongoing coordination.
+4.2 Regular updates provided to affected stakeholders within legal confidentiality limits.
+4.3 Internal reports prepared for management and compliance review.
+
+LEGAL FRAMEWORK
+This protocol ensures compliance with Bharatiya Nyaya Sanhita, 2023 procedural requirements and cooperation with investigating authorities.
+
+Last Updated: January 2026

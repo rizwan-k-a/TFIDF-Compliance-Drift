@@ -1,0 +1,93 @@
+CYBER DATA ACCESS CONTROL POLICY v1.0
+
+PURPOSE
+To establish comprehensive data access controls protecting organizational information assets from unauthorized access, modification, or disclosure, in compliance with Information Technology Act, 2021 and cybersecurity best practices.
+
+SCOPE
+All personnel with access to organizational systems, networks, and data repositories.
+
+ACCESS CONTROL FRAMEWORK
+
+1. USER IDENTIFICATION AND AUTHENTICATION
+1.1 User Account Management:
+    - Unique user identifier assigned to each individual
+    - Account creation documented with manager authorization
+    - Account deactivation completed within 24 hours of termination
+    - Contractor accounts clearly marked and monitored
+
+1.2 Authentication Requirements:
+    - Multi-factor authentication (MFA) mandatory for sensitive systems
+    - Strong password policy enforced (minimum 12 characters, complexity required)
+    - Password change required every 90 days
+    - No password sharing or sharing of credentials permitted
+    - Session timeout after 15 minutes of inactivity
+
+2. ROLE-BASED ACCESS CONTROL (RBAC)
+2.1 Access Role Definition:
+    - Roles defined based on job function and need-to-know principle
+    - Each role assigned specific system and data access permissions
+    - Principle of least privilege strictly enforced
+    - Regular access review conducted quarterly
+
+2.2 Access Provisioning Process:
+    - Access request submitted through formal ticketing system
+    - Manager approval required before provisioning
+    - IT Security review completed for sensitive access
+    - Provisioning completed and documented within 48 hours
+    - User acknowledgment obtained
+
+3. DATA CLASSIFICATION AND PROTECTION
+3.1 Data Classification:
+    - Public: Unrestricted access
+    - Internal: Restricted to authorized employees
+    - Confidential: Restricted to specific departments/roles
+    - Restricted: Severely limited access, encryption required
+
+3.2 Protection Measures:
+    - Confidential and Restricted data encrypted at rest and in transit
+    - Access to Restricted data requires additional authentication
+    - Data masking applied for personally identifiable information (PII)
+    - Audit logs maintained for all access to Confidential/Restricted data
+
+4. PRIVILEGED ACCESS MANAGEMENT (PAM)
+4.1 Administrative Access Controls:
+    - Administrator accounts separated from standard user accounts
+    - Administrative access logged and monitored
+    - Privileged session recording enabled for sensitive operations
+    - Just-in-time (JIT) access provisioning for temporary needs
+
+4.2 Approval and Monitoring:
+    - All privileged access requests require dual approval
+    - Privileged activities audited and reviewed regularly
+    - Unusual privileged access flagged for investigation
+    - Annual recertification of privileged users required
+
+5. NETWORK AND SYSTEM ACCESS
+5.1 Network Access Controls:
+    - VPN required for remote access
+    - IP whitelisting implemented for sensitive systems
+    - Network segmentation implemented for critical systems
+    - Firewall rules enforced with allow-list approach
+
+5.2 System Access Logging:
+    - Login/logout events logged with timestamp and IP address
+    - Failed login attempts monitored for unauthorized access attempts
+    - Access logs retained minimum 1 year
+    - Suspicious access patterns escalated to security team
+
+6. INCIDENT RESPONSE FOR ACCESS VIOLATIONS
+6.1 Detection:
+    - Automated alerts for suspicious access patterns
+    - Regular access anomaly reviews
+    - User reporting of suspicious access encouraged
+
+6.2 Response Protocol:
+    - Unauthorized access immediately reported to security team
+    - Account suspended pending investigation
+    - Forensic analysis initiated
+    - Incident documented for regulatory reporting
+
+COMPLIANCE REQUIREMENTS
+This policy ensures compliance with Information Technology Act, 2021, IT Rules 2021, and organizational information security standards. Non-compliance may result in disciplinary action.
+
+Last Updated: January 2026

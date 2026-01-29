@@ -1,0 +1,96 @@
+AML CUSTOMER DUE DILIGENCE PROCEDURE v1.0
+
+PURPOSE
+To establish comprehensive Know Your Customer (KYC) and Customer Due Diligence (CDD) processes compliant with Prevention of Money Laundering Act (PMLA), 2002 and Schedule-A requirements.
+
+SCOPE
+All customer onboarding, relationship enhancement, and periodic review activities.
+
+KYC REQUIREMENTS
+
+1. CUSTOMER IDENTIFICATION PROGRAM (CIP)
+1.1 For Individual Customers:
+    - Full legal name (as per government-issued ID)
+    - Date of birth
+    - Permanent address and contact details
+    - Occupation and source of income
+    - PAN (Permanent Account Number) or equivalent
+    - Identity proof (Aadhaar/Passport/Driving License/Voter ID)
+    - Address proof (not older than 3 months)
+
+1.2 For Business Entities:
+    - Legal entity name and registration number
+    - Business address and operational address
+    - Principal business activity and industry classification
+    - Beneficial ownership details (>25% stake holders)
+    - Certificate of Incorporation or Registration
+    - Board resolution authorizing relationship
+    - Directors' identification documents
+
+1.3 For High-Risk Customers:
+    - Enhanced identification verification required
+    - Source of wealth/income documented
+    - Enhanced address verification (on-site if necessary)
+    - Politically Exposed Person (PEP) screening completed
+
+2. CUSTOMER DUE DILIGENCE (CDD)
+2.1 Risk Categorization:
+    - Low-risk: Standard documentation sufficient
+    - Medium-risk: Additional verification and monitoring required
+    - High-risk: Enhanced due diligence mandatory
+
+2.2 Risk Assessment Factors:
+    - Customer profile and background
+    - Geographic location and jurisdiction
+    - Nature and frequency of transactions
+    - Exposure to jurisdictions with weak AML controls
+    - Customer's compliance history
+
+3. DOCUMENTATION AND VERIFICATION
+3.1 Document Collection:
+    - Collect and verify all identity documents
+    - Maintain certified copies in customer file
+    - Digital copies stored with encrypted access
+
+3.2 Verification Process:
+    - Identity verified from original documents
+    - Address verification conducted through independent means
+    - Bank account verification completed before funds receipt
+    - PEP screening performed against regulatory lists
+
+4. ONGOING MONITORING AND REVIEW
+4.1 Customer Information Update:
+    - Annual review of customer information
+    - Additional information requested if profile changes
+    - Address reverification every 3 years minimum
+    - Transaction pattern monitoring for suspicious activity
+
+4.2 Periodic CDD Review:
+    - File review conducted annually
+    - Risk categorization reassessed
+    - Enhanced monitoring upgraded if risk indicators emerge
+
+5. RECORD MAINTENANCE
+5.1 All KYC and CDD records maintained:
+    - Minimum retention period: 5 years post-relationship closure
+    - Secure storage with restricted access
+    - Digital backup maintained in encrypted format
+
+6. SCREENING AND SANCTION CHECKS
+6.1 Sanctions Screening:
+    - Customer screening against UN, UNSC, and national sanction lists
+    - Beneficial owners screened against regulatory lists
+    - Transaction counterparties screened before payment
+    - Quarterly rescreening of existing customers
+
+ESCALATION AND REPORTING
+If customer fails verification or presents high risk:
+- Escalated to Compliance Officer
+- Relationship declined or suspended
+- SAR filed if suspicious activity detected
+- Management review completed
+
+REGULATORY FRAMEWORK
+This procedure complies with Prevention of Money Laundering Act, 2002, Schedule-A obligations, and guidance issued by Financial Intelligence Unit (FIU).
+
+Last Updated: January 2026

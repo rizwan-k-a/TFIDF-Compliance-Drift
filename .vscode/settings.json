@@ -2,11 +2,24 @@
     "python-envs.defaultEnvManager": "ms-python.python:system",
     "python-envs.pythonProjects": [],
     "cSpell.words": [
+        "annot",
+        "axhline",
+        "cbar",
+        "cmap",
+        "figsize",
         "kmeans",
+        "linestyle",
+        "ngram",
         "pdfplumber",
+        "Stopword",
+        "stopwords",
         "tfidf",
         "vecs",
+        "Vectorizer",
         "xlabel",
-        "ylabel"
+        "xticklabels",
+        "xticks",
+        "ylabel",
+        "yticklabels"
     ]
 }
