@@ -3,6 +3,20 @@ tfidf-compliance-drift
 Purpose
 - Detect compliance drift in internal documents vs regulatory/reference texts using TF-IDF and cosine similarity.
 
+# Universal Compliance Review System
+
+## Features
+- PDF + OCR text extraction
+- TF-IDF vectorization
+- Cosine similarity analysis
+- Risk assessment dashboard
+- Mathematical transparency
+
+## Installation
+```bash
+pip install -r requirements.txt
+```
+
 Quickstart
 
 1. Create and activate a Python virtual environment
