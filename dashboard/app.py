@@ -667,46 +667,101 @@ def perform_classification(documents: List[str], categories: List[str], test_siz
 # ENHANCED CLUSTERING
 # ============================================================
 def perform_enhanced_clustering(documents: List[str], names: List[str], n_clusters: int = 3, keep_numbers: bool = True, use_lemma: bool = False, max_features=None, min_df=None, max_df=None):
-    """Clustering with quality metrics and top terms"""
-    if len(documents) < n_clusters:
+    """Clustering with quality metrics and top terms - handles edge cases"""
+    # Basic checks
+    if not documents or len(documents) < 2:
+        st.warning("⚠️ Need at least 2 documents to perform clustering.")
         return None
-    
+
     processed_docs = [preprocess_text(doc, keep_numbers, use_lemma) for doc in documents]
-    
-    vectorizer = TfidfVectorizer(
-        max_features=max_features or CONFIG.TFIDF_MAX_FEATURES,
-        ngram_range=CONFIG.NGRAM_RANGE,
-        stop_words='english'
-    )
-    X = vectorizer.fit_transform(processed_docs)
-    
-    kmeans = KMeans(n_clusters=n_clusters, random_state=CONFIG.RANDOM_STATE, n_init=10)
-    labels = kmeans.fit_predict(X)
-    
-    silhouette = silhouette_score(X, labels)
-    davies_bouldin = davies_bouldin_score(X.toarray(), labels)
-    
-    pca = PCA(n_components=2)
-    coords = pca.fit_transform(X.toarray())
-    
-    feature_names = vectorizer.get_feature_names_out()
-    top_terms_per_cluster = {}
-    
-    for cluster_id in range(n_clusters):
-        centroid = kmeans.cluster_centers_[cluster_id]
-        top_idx = np.argsort(centroid)[-10:][::-1]
-        top_terms_per_cluster[cluster_id] = [(feature_names[i], centroid[i]) for i in top_idx]
-    
-    return {
-        'labels': labels,
-        'coordinates': coords,
-        'inertia': kmeans.inertia_,
-        'silhouette_score': silhouette,
-        'davies_bouldin_score': davies_bouldin,
-        'top_terms': top_terms_per_cluster,
-        'vectorizer': vectorizer,
-        'X': X
-    }
+
+    # Adaptive TF-IDF parameters for small corpora
+    n_docs = len(processed_docs)
+    if n_docs <= 5:
+        adjusted_min_df = 1
+        adjusted_max_df = 1.0
+    elif n_docs <= 10:
+        adjusted_min_df = 1
+        adjusted_max_df = 1.0
+    else:
+        adjusted_min_df = max(1, int(n_docs * (min_df or CONFIG.MIN_DF))) if (min_df is not None) else max(1, int(n_docs * CONFIG.MIN_DF))
+        adjusted_max_df = max_df if (max_df is not None and max_df < 1.0) else CONFIG.MAX_DF
+
+    try:
+        vectorizer = TfidfVectorizer(
+            max_features=max_features or CONFIG.TFIDF_MAX_FEATURES,
+            ngram_range=CONFIG.NGRAM_RANGE,
+            min_df=adjusted_min_df,
+            max_df=adjusted_max_df,
+            stop_words='english',
+            sublinear_tf=True,
+            norm='l2',
+            use_idf=True,
+            smooth_idf=True
+        )
+        X = vectorizer.fit_transform(processed_docs)
+    except Exception as e:
+        st.warning(f"⚠️ TF-IDF vectorization failed: {e}. Falling back to relaxed vectorizer.")
+        vectorizer = TfidfVectorizer(
+            max_features=min(1000, max_features or CONFIG.TFIDF_MAX_FEATURES),
+            ngram_range=(1, 1),
+            min_df=1,
+            max_df=1.0,
+            stop_words=None,
+            sublinear_tf=True,
+            norm='l2',
+            use_idf=True,
+            smooth_idf=True
+        )
+        X = vectorizer.fit_transform(processed_docs)
+
+    # Ensure requested clusters are sensible
+    effective_n_clusters = min(n_clusters, max(2, n_docs - 1))
+
+    try:
+        kmeans = KMeans(n_clusters=effective_n_clusters, random_state=CONFIG.RANDOM_STATE, n_init=10)
+        labels = kmeans.fit_predict(X)
+
+        unique_labels = len(np.unique(labels))
+        if unique_labels < 2:
+            st.warning("⚠️ Clustering produced a single cluster. Try increasing document diversity or changing parameters.")
+            return None
+
+        try:
+            silhouette = silhouette_score(X, labels)
+        except Exception:
+            silhouette = float('nan')
+
+        try:
+            davies_bouldin = davies_bouldin_score(X.toarray(), labels)
+        except Exception:
+            davies_bouldin = float('nan')
+
+        pca = PCA(n_components=min(2, X.shape[1]))
+        coords = pca.fit_transform(X.toarray())
+
+        feature_names = vectorizer.get_feature_names_out()
+        top_terms_per_cluster = {}
+
+        for cluster_id in range(effective_n_clusters):
+            if cluster_id < len(kmeans.cluster_centers_):
+                centroid = kmeans.cluster_centers_[cluster_id]
+                top_idx = np.argsort(centroid)[-10:][::-1]
+                top_terms_per_cluster[cluster_id] = [(feature_names[i], float(centroid[i])) for i in top_idx]
+
+        return {
+            'labels': labels,
+            'coordinates': coords,
+            'inertia': float(kmeans.inertia_),
+            'silhouette_score': float(silhouette) if not np.isnan(silhouette) else None,
+            'davies_bouldin_score': float(davies_bouldin) if not np.isnan(davies_bouldin) else None,
+            'top_terms': top_terms_per_cluster,
+            'vectorizer': vectorizer,
+            'X': X,
+            'n_clusters_actual': unique_labels,
+            'n_clusters_requested': effective_n_clusters
+        }
+
     except Exception as e:
         st.error(f"❌ Clustering failed: {str(e)}")
         return None
@@ -1407,17 +1462,35 @@ def main():
             
             if cluster_results:
                 st.markdown("### Cluster Quality Metrics")
-                
-                col1, col2, col3 = st.columns(3)
+
+                # Safe extraction and formatting of metrics
+                silhouette = cluster_results.get('silhouette_score')
+                db_index = cluster_results.get('davies_bouldin_score')
+                inertia = cluster_results.get('inertia')
+                n_actual = cluster_results.get('n_clusters_actual', None)
+                n_requested = cluster_results.get('n_clusters_requested', None)
+
+                def fmt(x, fmtstr):
+                    try:
+                        if x is None or (isinstance(x, float) and np.isnan(x)):
+                            return "N/A"
+                        return fmtstr.format(x)
+                    except Exception:
+                        return "N/A"
+
+                col1, col2, col3, col4 = st.columns(4)
                 with col1:
-                    st.metric("Silhouette Score", f"{cluster_results['silhouette_score']:.3f}", 
+                    st.metric("Silhouette Score", fmt(silhouette, "{:.3f}"), 
                              help="Range: [-1, 1]. Higher is better. >0.5 = good clustering")
                 with col2:
-                    st.metric("Davies-Bouldin Index", f"{cluster_results['davies_bouldin_score']:.3f}",
+                    st.metric("Davies-Bouldin Index", fmt(db_index, "{:.3f}"),
                              help="Lower is better. Measures cluster separation")
                 with col3:
-                    st.metric("Inertia", f"{cluster_results['inertia']:.2f}",
+                    st.metric("Inertia", fmt(inertia, "{:.2f}"),
                              help="Sum of squared distances to centroids. Lower is better")
+                with col4:
+                    clusters_label = f"Requested: {n_requested}\nActual: {n_actual}" if n_requested is not None else f"Actual: {n_actual}"
+                    st.metric("Clusters (Requested / Actual)", clusters_label)
                 
                 st.markdown("### Document Clustering Visualization")
                 fig, ax = plt.subplots(figsize=(12, 8))
