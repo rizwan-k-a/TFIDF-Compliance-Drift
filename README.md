@@ -329,6 +329,15 @@ pytest -q tests/
 python -c "from src.manual_tfidf_math import validate_against_sklearn; validate_against_sklearn()"
 ```
 
+### Run Setup Validator (environment checks)
+A quick environment and project-health check script is included at `setup_validate.py`. It verifies project structure, required packages, imports, and data layout.
+
+```bash
+# From project root
+python setup_validate.py
+```
+
+
 ### Experiment with Hyperparameters
 - Open notebooks/experiments.ipynb in Jupyter
 - Run hyperparameter sweeps and diagnostic analyses

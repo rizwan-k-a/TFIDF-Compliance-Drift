@@ -241,6 +241,25 @@ st.markdown("""
         font-weight: 700 !important;
         padding: 1rem !important;
     }
+    /* Table styling for TF-IDF variant decision tables */
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 1rem 0;
+    }
+    th, td {
+        border: 1px solid #ddd;
+        padding: 12px;
+        text-align: left;
+    }
+    th {
+        background-color: #667eea;
+        color: white;
+        font-weight: bold;
+    }
+    tr:nth-child(even) {
+        background-color: #f9fafb;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -1257,6 +1276,100 @@ def main():
         
         if st.session_state.documents:
             st.markdown("---")
+            st.markdown("""
+<div class="math-formula">
+<h3>🧠 When to Use Which Variant? (Decision Logic)</h3>
+
+<h4>TF (Term Frequency) Variants:</h4>
+<table>
+<tr>
+<th>Variant</th>
+<th>Formula</th>
+<th>Use Case</th>
+<th>Example</th>
+</tr>
+<tr>
+<td><strong>Binary TF</strong></td>
+<td>1 if count > 0, else 0</td>
+<td>Boolean retrieval, presence/absence matters</td>
+<td>Legal keyword search (does "evidence" appear?)</td>
+</tr>
+<tr>
+<td><strong>Raw Count</strong></td>
+<td>count</td>
+<td>Short documents, word frequency critical</td>
+<td>Tweet sentiment analysis</td>
+</tr>
+<tr>
+<td><strong>Normalized TF</strong> ✅</td>
+<td>count / doc_length</td>
+<td>Long documents, prevents length bias</td>
+<td>Legal document comparison (our default)</td>
+</tr>
+<tr>
+<td><strong>Log Normalization</strong></td>
+<td>1 + log(count)</td>
+<td>Diminishing returns for repeated terms</td>
+<td>News article categorization</td>
+</tr>
+<tr>
+<td><strong>Double Normalization</strong></td>
+<td>0.5 + 0.5×(count/max_count)</td>
+<td>Balances common vs. rare terms</td>
+<td>Academic paper similarity</td>
+</tr>
+</table>
+
+<h4>IDF (Inverse Document Frequency) Variants:</h4>
+<table>
+<tr>
+<th>Variant</th>
+<th>Formula</th>
+<th>Use Case</th>
+<th>Example</th>
+</tr>
+<tr>
+<td><strong>Standard IDF</strong></td>
+<td>log(N/DF)</td>
+<td>Basic information theory</td>
+<td>Simple document retrieval</td>
+</tr>
+<tr>
+<td><strong>Smooth IDF</strong></td>
+<td>log(N/DF) + 1</td>
+<td>Prevents zero division</td>
+<td>Small corpus analysis</td>
+</tr>
+<tr>
+<td><strong>Sklearn Smooth IDF</strong> ✅</td>
+<td>log((1+N)/(1+DF)) + 1</td>
+<td>Industry standard, robust to edge cases</td>
+<td>Production ML pipelines (our default)</td>
+</tr>
+<tr>
+<td><strong>Probabilistic IDF</strong></td>
+<td>log((N-DF)/DF)</td>
+<td>Emphasizes discriminative terms</td>
+<td>Feature selection for classification</td>
+</tr>
+</table>
+
+<h4>Our Choice for Compliance Analysis:</h4>
+<div style="background: #e0f2fe; padding: 1rem; border-radius: 8px; margin-top: 1rem;">
+<p><strong>Normalized TF × Sklearn Smooth IDF</strong></p>
+<ul>
+<li><strong>Why Normalized TF?</strong> Legal documents vary greatly in length (100-10000 words). Raw counts would bias toward longer policies.</li>
+<li><strong>Why Sklearn Smooth IDF?</strong> Robust to small corpora, compatible with sklearn ecosystem, prevents division by zero naturally.</li>
+<li><strong>Trade-offs:</strong> Sacrifices granularity of raw counts for generalizability across document sizes.</li>
+</ul>
+</div>
+
+<h4>Real-World Example:</h4>
+<p>Document A (100 words): "compliance" appears 5 times → Normalized TF = 5/100 = 0.05</p>
+<p>Document B (1000 words): "compliance" appears 10 times → Normalized TF = 10/1000 = 0.01</p>
+<p><strong>Result:</strong> Doc A scores higher despite fewer raw mentions, correctly reflecting higher term importance.</p>
+</div>
+""", unsafe_allow_html=True)
             st.subheader("📊 Complete TF-IDF Computation (All Variants)")
             st.caption("Demonstrates manual calculation with all standard TF and IDF formulas")
             
