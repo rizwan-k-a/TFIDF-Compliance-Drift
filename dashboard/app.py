@@ -1,9 +1,9 @@
 """
 ============================================================
 UNIVERSAL COMPLIANCE REVIEW SYSTEM - COMPLETE PROFESSIONAL VERSION
-def perform_enhanced_clustering(documents: List[str], names: List[str], n_clusters: int = 3, keep_numbers: bool = True, use_lemma: bool = False, max_features=None, min_df=None, max_df=None):
+WITH K-FOLD CROSS-VALIDATION
 MCA Final Project - Rizwan
-Fixed: Classification error handling for insufficient category samples
+Fixed: Classification error handling + Cross-Validation Support
 ============================================================
 """
 
@@ -30,7 +30,7 @@ from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.metrics import (classification_report, accuracy_score, confusion_matrix,
                             silhouette_score, davies_bouldin_score)
 from fpdf import FPDF
@@ -467,21 +467,17 @@ def build_tfidf_vectors(reference_docs: List[str], internal_docs: List[str], kee
     all_docs = reference_docs + internal_docs
     processed_docs = [preprocess_text(doc, keep_numbers, use_lemma) for doc in all_docs]
     
-    # Adaptive min_df and max_df based on document count
     n_docs = len(processed_docs)
     
-    # Adjust min_df: use absolute count for small corpora
     if n_docs <= 5:
-        adjusted_min_df = 1  # Appear in at least 1 document
+        adjusted_min_df = 1
     elif n_docs <= 10:
         adjusted_min_df = 1
     else:
-        # Use percentage for larger sets, default to 0 if None
         adjusted_min_df = max(1, int(n_docs * (min_df or 0))) if min_df and min_df > 0 else 1
     
-    # Adjust max_df: be more permissive for small corpora
     if n_docs <= 5:
-        adjusted_max_df = 1.0  # No upper limit for small sets
+        adjusted_max_df = 1.0
     else:
         adjusted_max_df = max_df if max_df and max_df < 1.0 else 1.0
     
@@ -505,14 +501,13 @@ def build_tfidf_vectors(reference_docs: List[str], internal_docs: List[str], kee
         return vectorizer, ref_vectors, int_vectors
         
     except ValueError as e:
-        # If still fails, try with minimal constraints
         st.warning(f"⚠️ Adjusting TF-IDF parameters for small document set ({n_docs} docs)")
         vectorizer = TfidfVectorizer(
             max_features=min(1000, max_features or CONFIG.TFIDF_MAX_FEATURES),
-            ngram_range=(1, 1),  # Unigrams only
-            min_df=1,  # Minimum constraint
-            max_df=1.0,  # No maximum constraint
-            stop_words=None,  # Keep all words
+            ngram_range=(1, 1),
+            min_df=1,
+            max_df=1.0,
+            stop_words=None,
             sublinear_tf=True,
             norm='l2',
             use_idf=True,
@@ -524,7 +519,6 @@ def build_tfidf_vectors(reference_docs: List[str], internal_docs: List[str], kee
         int_vectors = all_vectors[len(reference_docs):]
         
         return vectorizer, ref_vectors, int_vectors
-
 
 def compute_similarity_scores_by_category(categorized_docs: Dict, categorized_guidelines: Dict, keep_numbers: bool = True, use_lemma: bool = False, max_features=None, min_df=None, max_df=None) -> pd.DataFrame:
     """Compute cosine similarity for documents matched to their category guidelines"""
@@ -542,7 +536,6 @@ def compute_similarity_scores_by_category(categorized_docs: Dict, categorized_gu
         if not internal_docs or not guideline_docs:
             continue
         
-        # Check if we have enough documents for analysis
         total_docs = len(internal_docs) + len(guideline_docs)
         if total_docs < 2:
             st.warning(f"⚠️ Skipping category '{category}': insufficient documents ({total_docs})")
@@ -555,7 +548,6 @@ def compute_similarity_scores_by_category(categorized_docs: Dict, categorized_gu
                 max_features, min_df, max_df
             )
             
-            # Compute similarity
             similarity_matrix = cosine_similarity(int_vecs, ref_vecs)
             
             for i, doc_name in enumerate(internal_names):
@@ -581,15 +573,15 @@ def compute_similarity_scores_by_category(categorized_docs: Dict, categorized_gu
     return pd.DataFrame(all_results)
 
 # ============================================================
-# CLASSIFICATION (SUPERVISED LEARNING) - FIXED
+# CLASSIFICATION WITH CROSS-VALIDATION
 # ============================================================
-def perform_classification(documents: List[str], categories: List[str], test_size: float = 0.3, keep_numbers: bool = True, use_lemma: bool = False, max_features=None, min_df=None, max_df=None):
-    """Train supervised classifiers on TF-IDF vectors with proper error handling"""
+def perform_classification(documents: List[str], categories: List[str], test_size: float = 0.3, 
+                          keep_numbers: bool = True, use_lemma: bool = False, 
+                          max_features=None, min_df=None, max_df=None, use_cv: bool = False):
+    """Train supervised classifiers on TF-IDF vectors with proper error handling and optional cross-validation"""
     
-    # Count samples per category
     category_counts = Counter(categories)
     
-    # Filter out categories with too few samples (< 2)
     valid_categories = {cat for cat, count in category_counts.items() if count >= 2}
     
     if len(valid_categories) < 2:
@@ -597,7 +589,6 @@ def perform_classification(documents: List[str], categories: List[str], test_siz
         st.info(f"Current distribution: {dict(category_counts)}")
         return None
     
-    # Filter documents and categories
     filtered_docs = []
     filtered_categories = []
     
@@ -610,7 +601,6 @@ def perform_classification(documents: List[str], categories: List[str], test_siz
         st.warning(f"⚠️ Only {len(filtered_docs)} valid documents. Need at least 6 for reliable classification.")
         return None
     
-    # Show what was filtered out
     excluded_count = len(documents) - len(filtered_docs)
     if excluded_count > 0:
         st.info(f"ℹ️ Excluded {excluded_count} documents with insufficient category samples")
@@ -626,7 +616,6 @@ def perform_classification(documents: List[str], categories: List[str], test_siz
     X = vectorizer.fit_transform(processed_docs)
     y = filtered_categories
     
-    # Check if stratification is possible
     min_class_count = min(Counter(y).values())
     use_stratify = min_class_count >= 2 and test_size * len(y) >= len(set(y))
     
@@ -640,21 +629,30 @@ def perform_classification(documents: List[str], categories: List[str], test_siz
             X, y, test_size=test_size, random_state=CONFIG.RANDOM_STATE
         )
     
-    # Train Multinomial Naive Bayes
     nb_clf = MultinomialNB()
     nb_clf.fit(X_train, y_train)
     nb_pred = nb_clf.predict(X_test)
     nb_acc = accuracy_score(y_test, nb_pred)
     
-    # Train Logistic Regression
     lr_clf = LogisticRegression(max_iter=1000, random_state=CONFIG.RANDOM_STATE)
     lr_clf.fit(X_train, y_train)
     lr_pred = lr_clf.predict(X_test)
     lr_acc = accuracy_score(y_test, lr_pred)
     
+    if use_cv:
+        try:
+            nb_cv_scores = cross_val_score(nb_clf, X, y, cv=5, scoring='accuracy')
+            lr_cv_scores = cross_val_score(lr_clf, X, y, cv=5, scoring='accuracy')
+        except Exception as e:
+            st.warning(f"⚠️ Cross-validation failed: {str(e)}. Continuing without CV scores.")
+            nb_cv_scores = None
+            lr_cv_scores = None
+    else:
+        nb_cv_scores = None
+        lr_cv_scores = None
+    
     feature_names = vectorizer.get_feature_names_out()
     
-    # Get top features per class
     top_features_per_class = {}
     for idx, category in enumerate(lr_clf.classes_):
         if len(lr_clf.coef_.shape) > 1:
@@ -669,9 +667,15 @@ def perform_classification(documents: List[str], categories: List[str], test_siz
         'nb_model': nb_clf,
         'nb_accuracy': nb_acc,
         'nb_predictions': nb_pred,
+        'nb_cv_scores': nb_cv_scores,
+        'nb_cv_mean': nb_cv_scores.mean() if nb_cv_scores is not None else None,
+        'nb_cv_std': nb_cv_scores.std() if nb_cv_scores is not None else None,
         'lr_model': lr_clf,
         'lr_accuracy': lr_acc,
         'lr_predictions': lr_pred,
+        'lr_cv_scores': lr_cv_scores,
+        'lr_cv_mean': lr_cv_scores.mean() if lr_cv_scores is not None else None,
+        'lr_cv_std': lr_cv_scores.std() if lr_cv_scores is not None else None,
         'y_test': y_test,
         'top_features': top_features_per_class,
         'confusion_matrix_nb': confusion_matrix(y_test, nb_pred, labels=nb_clf.classes_),
@@ -688,14 +692,12 @@ def perform_classification(documents: List[str], categories: List[str], test_siz
 # ============================================================
 def perform_enhanced_clustering(documents: List[str], names: List[str], n_clusters: int = 3, keep_numbers: bool = True, use_lemma: bool = False, max_features=None, min_df=None, max_df=None):
     """Clustering with quality metrics and top terms - handles edge cases"""
-    # Basic checks
     if not documents or len(documents) < 2:
         st.warning("⚠️ Need at least 2 documents to perform clustering.")
         return None
 
     processed_docs = [preprocess_text(doc, keep_numbers, use_lemma) for doc in documents]
 
-    # Adaptive TF-IDF parameters for small corpora
     n_docs = len(processed_docs)
     if n_docs <= 5:
         adjusted_min_df = 1
@@ -735,7 +737,6 @@ def perform_enhanced_clustering(documents: List[str], names: List[str], n_cluste
         )
         X = vectorizer.fit_transform(processed_docs)
 
-    # Ensure requested clusters are sensible
     effective_n_clusters = min(n_clusters, max(2, n_docs - 1))
 
     try:
@@ -856,7 +857,7 @@ def render_header():
     st.markdown("""
         <div class="main-header">⚖️ Universal Compliance Review System</div>
         <div style="font-size: 1.1rem; color: #64748b; margin-bottom: 2rem;">
-            Complete Mathematical TF-IDF • Supervised Classification • Advanced Clustering
+            Complete Mathematical TF-IDF • Supervised Classification • Advanced Clustering • Cross-Validation
         </div>
     """, unsafe_allow_html=True)
 
@@ -984,59 +985,34 @@ def generate_pdf(results_df):
     buffer.seek(0)
     return buffer
 
-
-# ============================================================
-# INPUT VALIDATION & SECURITY
-# ============================================================
 def validate_input_file(file, max_size_mb: int = CONFIG.MAX_FILE_SIZE_MB, allowed_extensions: List[str] = None) -> Tuple[bool, str]:
     """
     Validate uploaded file for security and compliance.
-    
-    Parameters:
-    -----------
-    file : streamlit UploadedFile
-        The file object from st.file_uploader()
-    max_size_mb : int
-        Maximum allowed file size in MB (default: CONFIG.MAX_FILE_SIZE_MB)
-    allowed_extensions : List[str]
-        List of allowed file extensions (default: ['pdf', 'txt'])
-    
-    Returns:
-    --------
-    Tuple[bool, str]
-        (is_valid: bool, message: str)
-        - is_valid: True if file passes all validations
-        - message: Description of validation result or error reason
     """
     
     if allowed_extensions is None:
         allowed_extensions = ['pdf', 'txt']
     
-    # Check 1: File size validation
     file_size_mb = file.size / (1024 * 1024)
     if file_size_mb > max_size_mb:
         return False, f"File exceeds {max_size_mb}MB limit (size: {file_size_mb:.1f}MB)"
     
-    # Check 2: File extension validation
     file_ext = file.name.split('.')[-1].lower()
     if file_ext not in allowed_extensions:
         ext_list = ', '.join(allowed_extensions)
         return False, f"File type .{file_ext} not allowed. Allowed types: {ext_list}"
     
-    # Check 3: PDF magic bytes validation
     if file_ext == 'pdf':
         try:
-            file_bytes = file.getvalue()[:4]  # Read first 4 bytes
+            file_bytes = file.getvalue()[:4]
             if not file_bytes.startswith(b'%PDF'):
                 return False, f"Invalid PDF file: {file.name} (wrong magic bytes). File may be corrupted."
         except Exception as e:
             return False, f"Error validating PDF: {str(e)}"
     
-    # Check 4: Text file encoding validation (for .txt files)
     if file_ext == 'txt':
         try:
             file_content = file.getvalue()
-            # Try to decode as UTF-8
             file_content.decode('utf-8')
         except UnicodeDecodeError:
             return False, f"Text file encoding error: {file.name} (must be UTF-8 encoded)"
@@ -1045,7 +1021,6 @@ def validate_input_file(file, max_size_mb: int = CONFIG.MAX_FILE_SIZE_MB, allowe
     
     return True, f"✅ {file.name} - Valid ({file_size_mb:.2f}MB)"
 
-
 # ============================================================
 # MAIN APPLICATION
 # ============================================================
@@ -1053,7 +1028,6 @@ def main():
     render_header()
     render_disclaimer()
     
-    # Sidebar with hyperparameters
     with st.sidebar:
         st.header("⚙️ Configuration")
         
@@ -1066,14 +1040,18 @@ def main():
         
         st.subheader("🎛️ TF-IDF Parameters")
         max_features = st.slider("Max Features", 1000, 10000, CONFIG.TFIDF_MAX_FEATURES, step=1000, help="Maximum vocabulary size")
-
-        # UPDATED: Safer min_df and max_df ranges for small corpora
         min_df = st.slider("Min Document Frequency", 0.0, 0.1, 0.0, step=0.01, help="Ignore terms in < X% of documents (0 = no filter)")
         max_df = st.slider("Max Document Frequency", 0.8, 1.0, 1.0, step=0.05, help="Ignore terms in > X% of documents (1.0 = no filter)")
         
         st.subheader("📊 Analysis Settings")
         divergence_threshold = st.slider("Divergence Threshold (%)", 20, 80, CONFIG.DEFAULT_DIVERGENCE_THRESHOLD, step=5, help="Risk threshold for compliance")
         n_clusters = st.slider("Number of Clusters", 2, 5, 3, help="K-Means cluster count")
+        
+        use_cv = st.checkbox(
+            "Enable Cross-Validation (5-Fold)", 
+            value=False, 
+            help="Slower but provides more robust accuracy estimates. Recommended for final evaluation."
+        )
         
         st.markdown("---")
         st.markdown("**📋 Document Categories:**")
@@ -1085,7 +1063,6 @@ def main():
                 </div>
             """, unsafe_allow_html=True)
     
-    # Main Tabs
     tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
         "📊 Compliance Dashboard", 
         "🧮 TF-IDF Mathematics", 
@@ -1095,14 +1072,12 @@ def main():
         "📉 Visualizations"
     ])
     
-    # Session State
     if 'documents' not in st.session_state:
         st.session_state.documents = []
         st.session_state.doc_names = []
         st.session_state.doc_types = []
         st.session_state.doc_categories = []
     
-    # File Upload
     with st.expander("📁 Upload Documents", expanded=True):
         col1, col2 = st.columns(2)
         
@@ -1126,19 +1101,17 @@ def main():
                 key='guidelines'
             )
     
-    # Process Uploads
     if internal_files or guideline_files:
         new_docs = []
         new_names = []
         new_types = []
         new_categories = []
         
-        # Validation tracking metrics
         validation_metrics = {
             'total_files': 0,
             'valid_files': 0,
             'rejected_files': 0,
-            'rejection_reasons': {}  # reason: count
+            'rejection_reasons': {}
         }
         
         progress_bar = st.progress(0)
@@ -1147,11 +1120,9 @@ def main():
         validation_metrics['total_files'] = total_files
         
         for idx, file in enumerate(files_to_process):
-            # ===== SECURITY VALIDATION =====
             is_valid, validation_msg = validate_input_file(file)
             
             if not is_valid:
-                # Track rejection reason
                 reason = validation_msg.split(':')[0] if ':' in validation_msg else "Unknown reason"
                 validation_metrics['rejection_reasons'][reason] = validation_metrics['rejection_reasons'].get(reason, 0) + 1
                 validation_metrics['rejected_files'] += 1
@@ -1159,7 +1130,6 @@ def main():
                 progress_bar.progress((idx + 1) / total_files)
                 continue
             
-            # File passed validation - proceed with processing
             try:
                 if file.name.endswith('.pdf'):
                     text, ocr_used, pages = extract_text_from_pdf(
@@ -1196,12 +1166,10 @@ def main():
             
             progress_bar.progress((idx + 1) / total_files)
         
-        # Display validation metrics
         if validation_metrics['total_files'] > 0:
             st.markdown("---")
             st.markdown("### 📊 Upload Validation Summary")
             
-            # Metrics row
             metric_col1, metric_col2, metric_col3, metric_col4 = st.columns(4)
             with metric_col1:
                 st.metric("Total Files", validation_metrics['total_files'])
@@ -1213,7 +1181,6 @@ def main():
                 success_rate = (validation_metrics['valid_files'] / validation_metrics['total_files'] * 100) if validation_metrics['total_files'] > 0 else 0
                 st.metric("Success Rate", f"{success_rate:.0f}%")
             
-            # Detailed rejection reasons
             if validation_metrics['rejection_reasons']:
                 st.markdown("**Rejection Reasons:**")
                 reasons_df = pd.DataFrame(
@@ -1230,7 +1197,6 @@ def main():
         
         progress_bar.empty()
     
-    # System capabilities & error handling info (Tab 1)
     with st.expander("🛡️ System Capabilities & Error Handling", expanded=False):
         st.markdown("""
         ### Robust Edge Case Handling
@@ -1275,7 +1241,6 @@ def main():
         3. Set min_df = 0.5, max_df = 0.6 → Watch adaptive parameter adjustment
         """, unsafe_allow_html=True)
     
-    # Sample Data
     if not st.session_state.documents:
         st.info("👆 Upload documents or use sample data")
         if st.button("Load Sample Data"):
@@ -1593,16 +1558,11 @@ def main():
                                 st.dataframe(tfidf_df, use_container_width=True, hide_index=True)
                                 
                                 st.info(f"📊 **Document Frequency:** Term '{word}' appears in {data['df']} out of {len(st.session_state.documents[:5])} documents")
-                    # end for selected_words
 
-                    # -------------------------------------------------
-                    # Comparative validation: Manual vs sklearn TF-IDF
-                    # -------------------------------------------------
                     st.markdown("---")
                     st.markdown("### 🔬 Validation: Manual vs. Sklearn TF-IDF")
                     st.caption("Proves correctness of from-scratch implementation")
 
-                    # Build sklearn TF-IDF on same subset
                     sklearn_vectorizer = TfidfVectorizer(
                         max_features=max_features,
                         min_df=min_df if min_df > 0 else 1,
@@ -1679,12 +1639,11 @@ def main():
         else:
             st.info("📤 Upload documents to see TF-IDF mathematical analysis")
     
-    # TAB 3: Classification - UPDATED WITH FIX
+    # TAB 3: Classification WITH CROSS-VALIDATION DISPLAY
     with tab3:
         st.subheader("🎓 Supervised Classification with TF-IDF")
         st.caption("Training classifiers to predict document categories")
         
-        # Show current category distribution
         if st.session_state.documents:
             category_counts = Counter(st.session_state.doc_categories)
             st.markdown("**Current Category Distribution:**")
@@ -1701,16 +1660,13 @@ def main():
                     """, unsafe_allow_html=True)
         
         if len(st.session_state.documents) >= 6:
-            # Check if we have enough valid categories
             category_counts = Counter(st.session_state.doc_categories)
             valid_categories = {cat: count for cat, count in category_counts.items() if count >= 2}
             
             if len(valid_categories) >= 2:
                 with st.spinner("Training classifiers..."):
-                    # START PERFORMANCE TRACKING
                     start_time = time.time()
-                    start_memory = sys.getsizeof(st.session_state.documents) / (1024 * 1024)  # MB
-
+                    
                     clf_results = perform_classification(
                         st.session_state.documents,
                         st.session_state.doc_categories,
@@ -1718,18 +1674,17 @@ def main():
                         use_lemma=use_lemma,
                         max_features=max_features,
                         min_df=min_df,
-                        max_df=max_df
+                        max_df=max_df,
+                        use_cv=use_cv
                     )
 
                     end_time = time.time()
                     training_time = end_time - start_time
-                    # END PERFORMANCE TRACKING
                 
                 if clf_results:
-                    # Show filtering info if any
                     if clf_results['excluded_count'] > 0:
                         st.info(f"ℹ️ Using {clf_results['filtered_count']} documents ({clf_results['excluded_count']} excluded due to insufficient category samples)")
-                    # Performance metrics display
+                    
                     st.markdown("### ⚡ Performance Metrics")
                     perf_col1, perf_col2, perf_col3, perf_col4 = st.columns(4)
 
@@ -1738,7 +1693,7 @@ def main():
 
                     with perf_col2:
                         doc_count = clf_results.get('filtered_count', len(st.session_state.documents))
-                        vec_time_estimate = (doc_count * 0.05)  # ~50ms per doc
+                        vec_time_estimate = (doc_count * 0.05)
                         st.metric("Vectorization Time", f"{vec_time_estimate:.2f}s", help="Estimated TF-IDF computation time")
 
                     with perf_col3:
@@ -1750,7 +1705,53 @@ def main():
                         st.metric("Throughput", f"{throughput:.1f} docs/s", help="Documents processed per second")
 
                     st.markdown("---")
-
+                    
+                    if clf_results.get('nb_cv_mean') is not None:
+                        st.markdown("### 📊 Cross-Validation Results (5-Fold)")
+                        st.caption("Robust performance estimates using 5-fold cross-validation")
+                        
+                        cv_col1, cv_col2 = st.columns(2)
+                        
+                        with cv_col1:
+                            st.markdown("**Naive Bayes CV**")
+                            st.metric(
+                                "CV Accuracy", 
+                                f"{clf_results['nb_cv_mean']:.2%} ± {clf_results['nb_cv_std']:.2%}",
+                                help="Mean and standard deviation across 5 folds"
+                            )
+                            
+                            fig_nb_cv, ax_nb_cv = plt.subplots(figsize=(6, 3))
+                            ax_nb_cv.plot(range(1, 6), clf_results['nb_cv_scores'], marker='o', color='steelblue', linewidth=2)
+                            ax_nb_cv.set_xlabel('Fold', fontweight='bold')
+                            ax_nb_cv.set_ylabel('Accuracy', fontweight='bold')
+                            ax_nb_cv.set_title('NB 5-Fold CV Scores', fontweight='bold')
+                            ax_nb_cv.set_ylim(0, 1)
+                            ax_nb_cv.grid(True, alpha=0.3)
+                            plt.tight_layout()
+                            st.pyplot(fig_nb_cv)
+                            plt.close(fig_nb_cv)
+                        
+                        with cv_col2:
+                            st.markdown("**Logistic Regression CV**")
+                            st.metric(
+                                "CV Accuracy", 
+                                f"{clf_results['lr_cv_mean']:.2%} ± {clf_results['lr_cv_std']:.2%}",
+                                help="Mean and standard deviation across 5 folds"
+                            )
+                            
+                            fig_lr_cv, ax_lr_cv = plt.subplots(figsize=(6, 3))
+                            ax_lr_cv.plot(range(1, 6), clf_results['lr_cv_scores'], marker='s', color='seagreen', linewidth=2)
+                            ax_lr_cv.set_xlabel('Fold', fontweight='bold')
+                            ax_lr_cv.set_ylabel('Accuracy', fontweight='bold')
+                            ax_lr_cv.set_title('LR 5-Fold CV Scores', fontweight='bold')
+                            ax_lr_cv.set_ylim(0, 1)
+                            ax_lr_cv.grid(True, alpha=0.3)
+                            plt.tight_layout()
+                            st.pyplot(fig_lr_cv)
+                            plt.close(fig_lr_cv)
+                        
+                        st.markdown("---")
+                    
                     st.markdown("### Model Performance")
                     
                     col1, col2 = st.columns(2)
@@ -1821,12 +1822,10 @@ def main():
                         cat_dist = clf_results['category_distribution']
                         dist_df = pd.DataFrame(list(cat_dist.items()), columns=['Category', 'Count'])
                         
-                        # Create bar chart with category colors
                         fig, ax = plt.subplots(figsize=(10, 5))
                         colors_list = [CATEGORIES.get(cat, {}).get('color', '#667eea') for cat in dist_df['Category']]
                         bars = ax.bar(dist_df['Category'], dist_df['Count'], color=colors_list, alpha=0.7, edgecolor='black', linewidth=1.5)
                         
-                        # Add value labels on bars
                         for bar in bars:
                             height = bar.get_height()
                             ax.text(bar.get_x() + bar.get_width()/2., height,
@@ -1836,11 +1835,10 @@ def main():
                         ax.set_ylabel('Document Count', fontweight='bold', fontsize=12)
                         ax.set_xlabel('Category', fontweight='bold', fontsize=12)
                         ax.set_title('Training Set Composition by Category', fontweight='bold', fontsize=13)
-                        ax.set_ylim(0, dist_df['Count'].max() * 1.15)  # Add space for labels
+                        ax.set_ylim(0, dist_df['Count'].max() * 1.15)
                         plt.tight_layout()
                         st.pyplot(fig)
                         
-                        # Show summary statistics
                         col1, col2, col3, col4 = st.columns(4)
                         with col1:
                             st.metric("Total Documents", dist_df['Count'].sum())
@@ -1886,7 +1884,6 @@ def main():
                 st.markdown("**Category Details:**")
                 for cat, count in category_counts.items():
                     status = "✅" if count >= 2 else "❌"
-                    color = CATEGORIES.get(cat, {}).get('color', '#667eea')
                     st.markdown(f"{status} **{cat}:** {count} document(s)")
                 
                 st.markdown("---")
@@ -1928,8 +1925,7 @@ def main():
             
             if cluster_results:
                 st.markdown("### Cluster Quality Metrics")
-
-                # Safe extraction and formatting of metrics
+                
                 silhouette = cluster_results.get('silhouette_score')
                 db_index = cluster_results.get('davies_bouldin_score')
                 inertia = cluster_results.get('inertia')
