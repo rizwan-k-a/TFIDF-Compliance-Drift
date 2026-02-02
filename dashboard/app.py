@@ -793,9 +793,9 @@ def perform_enhanced_clustering(documents: List[str], names: List[str], n_cluste
 def display_tfidf_matrix(vectorizer, matrix, doc_names):
     """Display TF-IDF matrix structure and properties"""
     feature_names = vectorizer.get_feature_names_out()
-    
+
     st.markdown("### 🗄️ TF-IDF Matrix Structure")
-    
+
     col1, col2, col3 = st.columns(3)
     with col1:
         st.metric("Matrix Shape", f"{matrix.shape[0]} × {matrix.shape[1]}")
@@ -804,29 +804,56 @@ def display_tfidf_matrix(vectorizer, matrix, doc_names):
         st.metric("Sparsity", f"{sparsity:.2%}")
     with col3:
         st.metric("Non-zero Entries", f"{matrix.nnz:,}")
-    
+
     st.markdown("#### Sample Matrix (First 5 docs, Top 20 features)")
+
     n_sample_docs = min(5, matrix.shape[0])
     n_sample_features = min(20, matrix.shape[1])
+
     dense_sample = matrix[:n_sample_docs, :n_sample_features].toarray()
+
     sample_df = pd.DataFrame(
         dense_sample,
-        columns=feature_names[:n_sample_features],
-        index=[doc_names[i][:30] if i < len(doc_names) else f"Doc_{i}" for i in range(n_sample_docs)]
+        columns=pd.Index(feature_names[:n_sample_features]).astype(str),
+        index=pd.Index([
+            f"{i}_{doc_names[i][:30]}" if i < len(doc_names) else f"Doc_{i}"
+            for i in range(n_sample_docs)
+        ])
     )
-    st.dataframe(sample_df.style.format("{:.4f}").background_gradient(cmap='YlOrRd'), use_container_width=True)
-    
+
+    # make columns unique
+    cols = pd.Series(sample_df.columns)
+    for dup in cols[cols.duplicated()].unique():
+        idxs = cols[cols == dup].index.tolist()
+        for j, k in enumerate(idxs):
+            if j > 0:
+                cols[k] = f"{dup}_{j}"
+    sample_df.columns = cols
+
+    sample_df.index = pd.Index(sample_df.index).astype(str)
+
+    st.dataframe(
+        sample_df.style.format("{:.4f}").background_gradient(cmap='YlOrRd'),
+        use_container_width=True
+    )
+
     if matrix.shape[0] <= 15:
         st.markdown("#### Document Similarity Heatmap")
         sim_matrix = cosine_similarity(matrix)
         fig, ax = plt.subplots(figsize=(10, 8))
-        sns.heatmap(sim_matrix, annot=True, fmt=".2f", cmap='coolwarm', 
-                   xticklabels=[n[:20] for n in doc_names],
-                   yticklabels=[n[:20] for n in doc_names],
-                   ax=ax)
+        sns.heatmap(
+            sim_matrix,
+            annot=True,
+            fmt=".2f",
+            cmap='coolwarm',
+            xticklabels=[n[:20] for n in doc_names],
+            yticklabels=[n[:20] for n in doc_names],
+            ax=ax
+        )
         ax.set_title('Document Similarity Matrix (Cosine)', fontweight='bold')
         plt.tight_layout()
         st.pyplot(fig)
+
 
 def generate_wordcloud(vectorizer, matrix, doc_idx):
     """Generate word cloud weighted by TF-IDF scores"""
