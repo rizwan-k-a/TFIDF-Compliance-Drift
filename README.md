@@ -392,13 +392,13 @@ Contributions welcome! Areas for enhancement:
 
 ## 📄 License
 
-[Add license information here]
+<--------------------------->
 
 ---
 
 ## 👤 Author
 
-**Rizwan Khan**
+**Rizwan K A**
 
 ---
 
