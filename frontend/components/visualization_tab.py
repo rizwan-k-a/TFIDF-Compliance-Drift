@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import base64
+from io import BytesIO
+
 import streamlit as st
 
 
@@ -18,4 +21,12 @@ def render_visualization_tab(internal_docs: list[dict], guideline_docs: list[dic
         return
 
     wc = WordCloud(width=1000, height=400, background_color="white").generate(texts)
-    st.image(wc.to_array(), use_container_width=True)
+
+    img = wc.to_image()
+    buf = BytesIO()
+    img.save(buf, format="PNG")
+    b64 = base64.b64encode(buf.getvalue()).decode("ascii")
+    st.markdown(
+        f"""<img src="data:image/png;base64,{b64}" style="width: 100%; height: auto;"/>""",
+        unsafe_allow_html=True,
+    )

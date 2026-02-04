@@ -1,48 +1,62 @@
 from __future__ import annotations
 
-from dataclasses import asdict
-
 import streamlit as st
-
-from backend.config import CONFIG
 
 
 def render_sidebar() -> dict:
-    st.sidebar.header("Settings")
+    """Render simplified sidebar with hardcoded optimal settings.
 
-    divergence_threshold = st.sidebar.slider(
-        "Divergence threshold (%)",
-        min_value=10,
-        max_value=90,
-        value=int(CONFIG.default_divergence_threshold),
-        step=5,
-    )
+    Returns a config dict used across the frontend/backend.
+    Keys are kept stable to avoid breaking existing components.
+    """
 
-    keep_numbers = st.sidebar.checkbox("Keep numbers", value=True)
-    use_lemma = st.sidebar.checkbox("Use lemmatization (NLTK)", value=False)
+    with st.sidebar:
+        st.markdown("## ⚙️ Configuration")
+        st.markdown("---")
 
-    max_features = st.sidebar.number_input(
-        "TF-IDF max features",
-        min_value=500,
-        max_value=20000,
-        value=int(CONFIG.tfidf_max_features),
-        step=500,
-    )
+        keep_numbers = st.checkbox(
+            "Keep numbers in analysis",
+            value=True,
+            help="Preserve numerical values in TF-IDF processing",
+        )
 
-    enable_ocr = st.sidebar.checkbox("Enable OCR fallback for PDFs", value=True)
+        st.markdown("---")
 
-    cfg = asdict(CONFIG)
-    cfg.update(
-        {
-            "divergence_threshold": divergence_threshold,
-            "keep_numbers": keep_numbers,
-            "use_lemma": use_lemma,
-            "max_features": max_features,
-            "enable_ocr": enable_ocr,
-        }
-    )
+        with st.expander("🔧 Advanced Settings", expanded=False):
+            st.markdown(
+                """
+                **Fixed System Defaults (v2):**
+                - 🎯 Divergence Threshold: `70%`
+                - 📝 Lemmatization (NLTK): `Always ON`
+                - 🔍 OCR Fallback for PDFs: `Always ON`
+                - 📊 TF-IDF Max Features: `10,000`
 
-    st.sidebar.markdown("---")
-    st.sidebar.caption("Tip: If PDFs are scanned images, enable OCR.")
+                These defaults are optimized for production-style compliance analysis.
+                """
+            )
 
+        with st.expander("📈 Risk Classification Guide", expanded=False):
+            st.markdown(
+                """
+                **Divergence Risk Levels:**
+                - ✅ **< 50%**: Compliant
+                - 🟢 **50–60%**: Low Risk
+                - 🟡 **60–70%**: Medium Risk
+                - 🟠 **70–80%**: High Risk
+                - 🔴 **80%+**: Critical Risk
+                """
+            )
+
+    # Return configuration dictionary with hardcoded optimal values.
+    # Keep legacy keys for compatibility with existing components.
+    cfg: dict = {
+        "divergence_threshold": 70.0,
+        "keep_numbers": bool(keep_numbers),
+        "use_lemma": True,
+        "enable_ocr": True,
+        "max_features": 10000,
+        # Aliases for future use (do not break consumers expecting these names)
+        "use_lemmatization": True,
+        "ocr_enabled": True,
+    }
     return cfg

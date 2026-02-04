@@ -5,7 +5,7 @@ Purpose
 
 What I found
 - Python project for TF-IDF based Compliance Drift Monitoring System.
-- Folder structure: `data/` (regulatory texts, internal docs, version history), `src/` (core math+DS logic, simple independent modules), `dashboard/` (Streamlit monitoring), `notebooks/` (maths.ipynb for derivations, experiments.ipynb for analysis), `results/` (outputs for demo/reports).
+- Folder structure: `backend/` (UI-agnostic logic), `frontend/` (Streamlit UI entrypoint at `frontend/app.py`), `data/` (regulatory + internal documents), `src/` (legacy/educational modules), `tests/`.
 
 Actionable next steps for humans (populate these so agents can work automatically)
 - Replace placeholder text files in `data/` with real regulatory and internal documents.
@@ -19,11 +19,11 @@ How AI agents should proceed (when repo is populated)
 - Identify data flow by tracing: data loaders -> preprocessing -> model/train/eval code (search for `fit`, `transform`, `TfidfVectorizer`, or `sklearn`).
 
 Project conventions to document here (examples to replace)
-- Packaging: Python modules live under `src/` and the top-level package is named `tfidf_drift`.
+- Packaging: Python modules live under `backend/`, `frontend/`, and `src/`.
 - Virtualenv: prefer `python -m venv .venv` and `pip install -r requirements.txt`.
 - Tests: use `pytest` with tests under `tests/` and run `pytest -q`.
-- Notebooks: keep exploratory work in `notebooks/` and production code in `src/`.
-- Folder structure: `data/` for regulatory texts, internal docs, version history; `src/` for core math+DS logic (simple, independent modules); `dashboard/` for Streamlit monitoring; `notebooks/` for maths derivations and experiments; `results/` for outputs.
+- Notebooks: keep exploratory work out of the production path; prefer adding utilities under `scripts/`.
+- Folder structure: `data/` for regulatory texts and internal docs; `backend/` for processing + ML; `frontend/` for Streamlit UI; `src/` for legacy/educational modules; `tests/` for pytest.
 
 Developer workflows (examples to update for this project)
 - Setup dev env:

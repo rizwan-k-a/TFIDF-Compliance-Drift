@@ -27,8 +27,6 @@ TFIDF-COMPLIANCE-DRIFT/
 ├── frontend/
 │   └── app.py                          # Main Streamlit dashboard (modular UI)
 ├── backend/                             # UI-agnostic backend (TF-IDF, similarity, ML, PDF, validation)
-├── dashboard/
-│   └── app.py                          # Compatibility entrypoint (defaults to frontend; legacy via env var)
 ├── data/
 │   ├── guidelines/                     # Reference legal documents
 │   │   ├── Criminal_Law/
@@ -49,12 +47,6 @@ TFIDF-COMPLIANCE-DRIFT/
 │   │   ├── financial_transaction_monitoring_policy_v1.txt
 │   │   └── information_security_incident_response_plan_v1.txt
 │   └── metadata.csv                    # Document metadata and category labels
-├── notebooks/
-│   ├── experiments.ipynb               # Mathematical derivations and tests
-│   └── maths_derivations.ipynb         # TF-IDF variant analysis
-├── results/
-│   ├── drift_alerts.csv                # Compliance drift results
-│   └── similarity_scores.csv           # Document similarity matrix
 ├── scripts/
 │   └── pdf_to_txt_once.py              # Batch PDF text extraction utility
 ├── src/                                # Legacy/educational modules
@@ -187,9 +179,6 @@ Six-tab Streamlit interface (modular frontend calling backend modules):
 **Real-Time Processing:**
 - Upload PDFs/TXT files → OCR with fallback chain → Vectorize → Analyze → Display results
 
-**Legacy note:** `dashboard/app.py` is kept for compatibility. By default it launches the modular UI.
-To force the legacy monolithic dashboard, set `TFIDF_USE_LEGACY_DASHBOARD=1`.
-
 ---
 
 ## 🧮 Mathematical Foundation
@@ -295,11 +284,8 @@ pip install -r requirements.txt
 ```bash
 # From project root directory
 
-# Recommended (modular frontend + backend)
+# Modular frontend + backend
 streamlit run frontend/app.py
-
-# Legacy monolithic app (kept for reference)
-# streamlit run dashboard/app.py
 
 # Dashboard opens at: http://localhost:8501
 ```
@@ -307,14 +293,8 @@ streamlit run frontend/app.py
 #### Windows helper scripts (avoids `python` vs `py` interpreter mismatch)
 
 ```powershell
-# Recommended modular UI
+# Run the modular UI
 ./scripts/run_streamlit.ps1 -Target frontend
-
-# Compatibility entrypoint (defaults to frontend)
-./scripts/run_streamlit.ps1 -Target dashboard
-
-# Force legacy monolithic dashboard
-./scripts/run_streamlit.ps1 -Target legacy-dashboard
 
 # Run on a different port/headless
 ./scripts/run_streamlit.ps1 -Target frontend -Port 8502 -Headless
@@ -338,12 +318,13 @@ streamlit run frontend/app.py
 3. **Review Results:**
    - **Compliance Tab:** View drift alerts and risk scores
    - **Classification Tab:** Inspect category predictions
+   - Download tables/figures directly from the dashboard
    - **Clustering Tab:** Explore document groupings
    - **Visualizations:** Analyze PCA projections and distributions
 
 4. **Export Results:**
-   - Download CSV reports: `results/drift_alerts.csv`, `results/similarity_scores.csv`
-   - Generate PDF compliance audit trail (from UI)
+   - Download CSV tables directly from the UI
+   - Generate a PDF compliance audit trail (from the UI)
 
 ---
 
@@ -368,10 +349,8 @@ python setup_validate.py
 ```
 
 
-### Experiment with Hyperparameters
-- Open notebooks/experiments.ipynb in Jupyter
-- Run hyperparameter sweeps and diagnostic analyses
-- Review mathematical derivations in notebooks/maths_derivations.ipynb
+### Hyperparameter Tuning
+- Use the dashboard sidebar controls to sweep TF-IDF and clustering/classification parameters.
 
 ---
 
@@ -386,14 +365,14 @@ See requirements.txt for complete list. Key packages:
 - **pdfplumber:** PDF text extraction (primary)
 - **pytesseract:** OCR fallback for scanned PDFs
 - **nltk:** Text preprocessing (tokenization, stopwords)
-- **matplotlib, plotly:** Data visualization
+- **matplotlib, seaborn:** Data visualization
 
 ---
 
 ## 🔍 Project Conventions
 
-- **Code Location:** Production code in `src/`, notebooks in `notebooks/`, app in `dashboard/`
-- **Data:** Store documents in `data/`, results in `results/`
+- **Code Location:** UI in `frontend/`, backend logic in `backend/`, legacy/educational modules in `src/`
+- **Data:** Store documents in `data/`
 - **Naming:** Snake_case for files/functions, SCREAMING_SNAKE_CASE for constants
 - **Testing:** Use pytest with tests under `tests/`
 - **Reproducibility:** Random seed set globally for consistent results across runs
@@ -402,8 +381,6 @@ See requirements.txt for complete list. Key packages:
 
 ## 📖 Documentation
 
-- **Mathematical Details:** See notebooks/maths_derivations.ipynb for TF-IDF derivations and theoretical background
-- **Experiments:** notebooks/experiments.ipynb contains hyperparameter sweeps and diagnostic analysis
 - **Code Examples:** Each module in `src/` includes docstrings with usage examples
 
 ---

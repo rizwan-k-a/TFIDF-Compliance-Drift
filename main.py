@@ -16,12 +16,16 @@ from frontend.styles.custom_css import CUSTOM_CSS
 
 def main() -> None:
     st.set_page_config(
-        page_title="Compliance Drift Monitoring",
-        page_icon="📄",
+        page_title="Compliance Drift Monitoring | TF-IDF Analysis",
+        page_icon="📊",
         layout="wide",
         initial_sidebar_state="expanded",
+        menu_items={
+            "About": "Premium Compliance Drift Monitoring Dashboard v2.0",
+        },
     )
 
+    # Apply enhanced CSS
     st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 
     cfg = render_sidebar()
@@ -31,7 +35,7 @@ def main() -> None:
     internal_docs = docs["internal"]
     guideline_docs = docs["guidelines"]
 
-    # Premium tab navigation with icons
+    # Enhanced tabs with custom labels
     tab1, tab2, tab3, tab4, tab5 = st.tabs(
         [
             "📊 Compliance Dashboard",
@@ -43,6 +47,8 @@ def main() -> None:
     )
 
     with tab1:
+        # Note: Streamlit does not support st.container().style(...).
+        # Styling is provided globally via CUSTOM_CSS.
         render_compliance_dashboard(cfg, internal_docs, guideline_docs)
 
     with tab2:

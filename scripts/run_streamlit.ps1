@@ -2,9 +2,7 @@
 param(
     # Which Streamlit entrypoint to run.
     # - frontend: recommended modular UI
-    # - dashboard: compatibility entrypoint (defaults to frontend)
-    # - legacy-dashboard: force the legacy monolithic dashboard
-    [ValidateSet('frontend', 'dashboard', 'legacy-dashboard')]
+    [ValidateSet('frontend')]
     [string]$Target = 'frontend',
 
     # Streamlit server port
@@ -33,20 +31,7 @@ function Get-PythonCommand {
 $repoRoot = Split-Path -Parent $PSScriptRoot
 Push-Location $repoRoot
 try {
-    $appPath = switch ($Target) {
-        'frontend' { 'frontend/app.py' }
-        'dashboard' { 'dashboard/app.py' }
-        'legacy-dashboard' { 'dashboard/app.py' }
-    }
-
-    if ($Target -eq 'legacy-dashboard') {
-        $env:TFIDF_USE_LEGACY_DASHBOARD = '1'
-    } else {
-        # Unset to avoid accidentally pinning legacy mode.
-        if (Test-Path Env:TFIDF_USE_LEGACY_DASHBOARD) {
-            Remove-Item Env:TFIDF_USE_LEGACY_DASHBOARD
-        }
-    }
+    $appPath = 'frontend/app.py'
 
     $pythonCmd = Get-PythonCommand
 

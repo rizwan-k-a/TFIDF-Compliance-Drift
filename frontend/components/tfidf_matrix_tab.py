@@ -34,4 +34,4 @@ def render_tfidf_matrix_tab(cfg: dict, internal_docs: list[dict], guideline_docs
     matrix = X.toarray()
     df = pd.DataFrame(matrix[:, :max_terms], index=names, columns=[str(t) for t in terms[:max_terms]])
 
-    st.dataframe(df, use_container_width=True)
+    st.dataframe(df, width="stretch")

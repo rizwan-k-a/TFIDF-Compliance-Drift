@@ -15,7 +15,7 @@ def render_tfidf_math_tab(cfg: dict, internal_docs: list[dict], guideline_docs: 
         return
 
     st.markdown(
-        """
+        r"""
 - Term Frequency: $tf(t,d)$ variants (raw, normalized, log, etc.)
 - Inverse Document Frequency: $idf(t)$ variants (standard, smoothed, sklearn-style)
 - TF-IDF: $tf(t,d) \cdot idf(t)$
@@ -41,10 +41,10 @@ def render_tfidf_math_tab(cfg: dict, internal_docs: list[dict], guideline_docs: 
         col1, col2 = st.columns(2)
         with col1:
             st.write("TF variants")
-            st.dataframe(tf_df, use_container_width=True)
+            st.dataframe(tf_df, width="stretch")
         with col2:
             st.write("IDF variants")
             st.json(idf)
 
         st.write("TF-IDF (normalized TF * sklearn-smooth IDF)")
-        st.dataframe(tfidf_df, use_container_width=True)
+        st.dataframe(tfidf_df, width="stretch")

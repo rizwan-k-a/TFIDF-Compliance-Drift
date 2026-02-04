@@ -30,7 +30,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 class FileInfo:
     path: Path
     module_id: str
-    kind: str  # src|dashboard|scripts|tests|root
+    kind: str  # backend|frontend|src|scripts|tests|root
 
 
 @dataclass(frozen=True)
@@ -56,18 +56,14 @@ def iter_py_files() -> List[Path]:
 
 def classify_file(path: Path) -> FileInfo:
     rel = path.relative_to(REPO_ROOT)
-    parts = rel.parts
+    parts = rel.with_suffix("").parts
+    module_id = ".".join(parts)
+    top = parts[0] if parts else "root"
 
-    if parts[:1] == ("src",):
-        return FileInfo(path=path, module_id=rel.stem, kind="src")
-    if parts[:1] == ("dashboard",):
-        return FileInfo(path=path, module_id=f"dashboard.{rel.stem}", kind="dashboard")
-    if parts[:1] == ("scripts",):
-        return FileInfo(path=path, module_id=f"scripts.{rel.stem}", kind="scripts")
-    if parts[:1] == ("tests",):
-        return FileInfo(path=path, module_id=f"tests.{rel.stem}", kind="tests")
+    if top in {"backend", "frontend", "src", "scripts", "tests"}:
+        return FileInfo(path=path, module_id=module_id, kind=top)
 
-    return FileInfo(path=path, module_id=rel.stem, kind="root")
+    return FileInfo(path=path, module_id=module_id, kind="root")
 
 
 def safe_parse(path: Path) -> Tuple[Optional[ast.Module], Optional[str]]:
@@ -85,7 +81,7 @@ def safe_parse(path: Path) -> Tuple[Optional[ast.Module], Optional[str]]:
 def extract_imports(tree: ast.Module) -> Tuple[Set[str], Set[Tuple[str, str]]]:
     """Return (imported_modules, from_imported_symbols).
 
-    - imported_modules: names like 'vectorize', 'sklearn', 'dashboard.app'
+    - imported_modules: names like 'src.vectorize', 'sklearn', 'frontend.app'
     - from_imported_symbols: pairs like ('manual_tfidf_math', 'tokenize')
     """
 
@@ -229,7 +225,7 @@ def build_index(files: List[FileInfo]) -> Tuple[Dict[str, FileInfo], Dict[str, P
     - module_id -> FileInfo
     - import_name -> file path (resolution table)
 
-    Note: src modules are imported as their stem (e.g., 'vectorize').
+    Note: This repo uses packages (e.g., 'src.vectorize', 'backend.similarity').
     """
 
     by_module_id: Dict[str, FileInfo] = {fi.module_id: fi for fi in files}
@@ -238,15 +234,9 @@ def build_index(files: List[FileInfo]) -> Tuple[Dict[str, FileInfo], Dict[str, P
 
     for fi in files:
         rel = fi.path.relative_to(REPO_ROOT)
-        if fi.kind == "src":
-            import_name_to_path[rel.stem] = fi.path
-        elif fi.kind in {"dashboard", "scripts", "tests"}:
-            import_name_to_path[fi.module_id] = fi.path
-            # Also allow importing by leaf name (common for scripts/tests if sys.path changes)
-            import_name_to_path[rel.stem] = fi.path
-        else:
-            import_name_to_path[fi.module_id] = fi.path
-            import_name_to_path[rel.stem] = fi.path
+        # Resolve fully-qualified imports (preferred) and leaf imports (sometimes used when sys.path changes).
+        import_name_to_path[fi.module_id] = fi.path
+        import_name_to_path[rel.stem] = fi.path
 
     return by_module_id, import_name_to_path
 
@@ -270,7 +260,7 @@ def find_entrypoints(files: List[FileInfo]) -> Dict[str, List[Path]]:
 
     for fi in files:
         rel = fi.path.relative_to(REPO_ROOT).as_posix()
-        if rel == "dashboard/app.py":
+        if rel == "frontend/app.py":
             operational.append(fi.path)
             continue
         if rel == "setup_validate.py":
