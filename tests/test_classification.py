@@ -10,19 +10,15 @@ Validates:
 """
 
 import pytest
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
-
-from similarity import perform_classification, perform_enhanced_clustering
+from backend.classification import perform_classification
+from backend.clustering import perform_enhanced_clustering
 
 
 class TestClassificationBasic:
     """Test suite for basic classification operations."""
     
     def test_classification_with_sufficient_data(self, sample_docs, sample_categories):
-        """Test classification with 4 documents and 2 categories."""
+        """Test classification with sufficient documents and categories."""
         result = perform_classification(
             sample_docs,
             sample_categories,

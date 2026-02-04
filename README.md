@@ -24,8 +24,11 @@ This system monitors compliance drift by comparing internal organizational polic
 
 ```
 TFIDF-COMPLIANCE-DRIFT/
+├── frontend/
+│   └── app.py                          # Main Streamlit dashboard (modular UI)
+├── backend/                             # UI-agnostic backend (TF-IDF, similarity, ML, PDF, validation)
 ├── dashboard/
-│   └── app.py                          # Main Streamlit dashboard (2000+ lines)
+│   └── app.py                          # Compatibility entrypoint (defaults to frontend; legacy via env var)
 ├── data/
 │   ├── guidelines/                     # Reference legal documents
 │   │   ├── Criminal_Law/
@@ -54,7 +57,7 @@ TFIDF-COMPLIANCE-DRIFT/
 │   └── similarity_scores.csv           # Document similarity matrix
 ├── scripts/
 │   └── pdf_to_txt_once.py              # Batch PDF text extraction utility
-├── src/                                # Core modules
+├── src/                                # Legacy/educational modules
 │   ├── alerts.py                       # Drift detection & risk scoring logic
 │   ├── drift.py                        # Core comparison engine
 │   ├── manual_tfidf_math.py            # From-scratch TF-IDF implementation
@@ -163,9 +166,9 @@ Automated risk quantification for internal policy vs. regulatory guidelines:
 
 ---
 
-### 6. UI/UX Dashboard (`dashboard/app.py`)
+### 6. UI/UX Dashboard (`frontend/app.py`)
 
-Six-tab Streamlit interface:
+Six-tab Streamlit interface (modular frontend calling backend modules):
 
 1. **Compliance Tab:** Upload internal docs → Compare vs. guidelines → View drift alerts
 2. **Math Tab:** Explore TF-IDF variants, manual calculations, and theoretical foundations
@@ -183,6 +186,9 @@ Six-tab Streamlit interface:
 
 **Real-Time Processing:**
 - Upload PDFs/TXT files → OCR with fallback chain → Vectorize → Analyze → Display results
+
+**Legacy note:** `dashboard/app.py` is kept for compatibility. By default it launches the modular UI.
+To force the legacy monolithic dashboard, set `TFIDF_USE_LEGACY_DASHBOARD=1`.
 
 ---
 
@@ -288,9 +294,33 @@ pip install -r requirements.txt
 
 ```bash
 # From project root directory
-streamlit run dashboard/app.py
+
+# Recommended (modular frontend + backend)
+streamlit run frontend/app.py
+
+# Legacy monolithic app (kept for reference)
+# streamlit run dashboard/app.py
 
 # Dashboard opens at: http://localhost:8501
+```
+
+#### Windows helper scripts (avoids `python` vs `py` interpreter mismatch)
+
+```powershell
+# Recommended modular UI
+./scripts/run_streamlit.ps1 -Target frontend
+
+# Compatibility entrypoint (defaults to frontend)
+./scripts/run_streamlit.ps1 -Target dashboard
+
+# Force legacy monolithic dashboard
+./scripts/run_streamlit.ps1 -Target legacy-dashboard
+
+# Run on a different port/headless
+./scripts/run_streamlit.ps1 -Target frontend -Port 8502 -Headless
+
+# Run tests
+./scripts/run_tests.ps1
 ```
 
 ### Basic Workflow

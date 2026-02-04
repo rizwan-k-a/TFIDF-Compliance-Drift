@@ -5,11 +5,6 @@ Provides reusable test data and utilities for all test modules.
 """
 
 import pytest
-import sys
-from pathlib import Path
-
-# Ensure src modules are importable in tests
-sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
 
 
 @pytest.fixture
@@ -51,13 +46,27 @@ def sample_docs():
         Reporting requirements mandate notification to CERT-In for data breach incidents.
         Organizations must implement cybersecurity measures per framework specifications.
         """,
+
+        """
+        Financial Transaction Monitoring Policy v1
+
+        This policy defines suspicious transaction detection, threshold reporting, and audit trails.
+        Transaction monitoring must flag unusual patterns and ensure regulatory compliance.
+        """,
+
+        """
+        Information Security Incident Response Plan v1
+
+        The organization must detect, respond to, and recover from cybersecurity incidents.
+        Incident response includes triage, containment, eradication, and reporting requirements.
+        """,
     ]
 
 
 @pytest.fixture
 def sample_categories():
     """Category labels matching sample_docs fixture."""
-    return ['Financial_Law', 'Criminal_Law', 'Criminal_Law', 'Cyber_Crime']
+    return ['Financial_Law', 'Criminal_Law', 'Criminal_Law', 'Cyber_Crime', 'Financial_Law', 'Cyber_Crime']
 
 
 @pytest.fixture

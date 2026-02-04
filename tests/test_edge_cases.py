@@ -10,13 +10,8 @@ Validates:
 """
 
 import pytest
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
-
-from vectorize import vectorize_documents
-from similarity import perform_classification
+from backend.tfidf_engine import vectorize_documents
+from backend.classification import perform_classification
 
 
 class TestParameterValidation:

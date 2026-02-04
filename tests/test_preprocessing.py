@@ -10,13 +10,8 @@ Validates:
 """
 
 import pytest
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
-
-from preprocess import preprocess_text
-from manual_tfidf_math import preprocess_text_simple
+from backend.text_processing import preprocess_text
+from src.manual_tfidf_math import preprocess_text_simple
 
 
 class TestBasicPreprocessing:

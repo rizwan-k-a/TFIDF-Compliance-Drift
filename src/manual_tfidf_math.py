@@ -545,3 +545,91 @@ if __name__ == "__main__":
     print(f"\n✅ Function test successful!")
     print(f"Analyzed {n} documents for {len(test_words)} words")
     print(f"Sample result for 'privacy': IDF = {results['privacy']['idf']}")
+
+
+# ============================================================
+# ADDITIONS FOR PYTEST TEST SUITE COMPATIBILITY
+# ============================================================
+
+def compute_tf_variants(corpus):
+    """
+    5 TF variants per document (test-compatible).
+    Returns dict[variant][doc_index][term] = value
+    """
+    variants = {
+        "raw": {},
+        "normalized": {},
+        "log": {},
+        "double_norm": {},
+        "binary": {}
+    }
+
+    for i, doc in enumerate(corpus):
+        tokens = preprocess_text_simple(doc).split()
+        counts = Counter(tokens)
+
+        if not counts:
+            continue
+
+        max_freq = max(counts.values())
+        total = len(tokens)
+
+        for term, c in counts.items():
+            variants["raw"].setdefault(i, {})[term] = c / total
+            variants["normalized"].setdefault(i, {})[term] = c / total
+            variants["log"].setdefault(i, {})[term] = (1 + math.log(c)) / (1 + math.log(max_freq))
+            variants["double_norm"].setdefault(i, {})[term] = 0.5 + 0.5 * (c / max_freq)
+            variants["binary"].setdefault(i, {})[term] = 1.0
+
+    return variants
+
+
+def compute_idf_variants(tokenized_docs):
+    """
+    4 IDF variants (test-compatible).
+    tokenized_docs must be list of token lists.
+    """
+    N = len(tokenized_docs)
+    df = Counter()
+
+    for doc in tokenized_docs:
+        df.update(set(doc))
+
+    return {
+        "standard": {t: math.log(N / df[t]) + 1 for t in df},
+        "smooth": {t: math.log((1 + N) / (1 + df[t])) + 1 for t in df},
+        "prob": {t: math.log((N - df[t] + 1) / df[t]) + 1 for t in df},
+        "max": {t: math.log(1 + (max(df.values()) / df[t])) for t in df},
+    }
+
+
+def compute_manual_tfidf_complete(docs, min_df=1, max_df=1.0):
+    """
+    Complete TF-IDF pipeline (pytest-compatible).
+    Returns L2-normalized TF-IDF dict vectors.
+    """
+    tokenized = [preprocess_text_simple(d).split() for d in docs]
+    N = len(tokenized)
+
+    df = Counter()
+    for doc in tokenized:
+        df.update(set(doc))
+
+    vocab = {
+        term for term, c in df.items()
+        if c >= min_df and c <= max_df * N
+    }
+
+    idf = {t: math.log((1 + N) / (1 + df[t])) + 1 for t in vocab}
+
+    results = []
+
+    for doc in tokenized:
+        tf = compute_term_frequency(doc)
+        vec = {t: tf[t] * idf[t] for t in tf if t in vocab}
+
+        norm = math.sqrt(sum(v*v for v in vec.values())) or 1
+        vec = {t: v / norm for t, v in vec.items()}
+        results.append(vec)
+
+    return results

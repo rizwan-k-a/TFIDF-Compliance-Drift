@@ -20,6 +20,28 @@ from dataclasses import dataclass
 
 # Third-party imports
 import streamlit as st
+
+# ---------------------------------------------------------------------------
+# Compatibility shim
+# ---------------------------------------------------------------------------
+# This repo now has a modular Streamlit UI at `frontend/app.py`.
+# By default, running `streamlit run dashboard/app.py` launches the new UI.
+# Set TFIDF_USE_LEGACY_DASHBOARD=1 to run the legacy monolithic dashboard.
+
+_legacy_flag = os.environ.get("TFIDF_USE_LEGACY_DASHBOARD", "").strip().lower()
+if _legacy_flag not in {"1", "true", "yes"}:
+    try:
+        from frontend.app import main as _modern_main
+
+        _modern_main()
+        st.stop()
+    except Exception as _e:
+        st.warning(
+            "Modern UI failed to start; falling back to legacy dashboard. "
+            "Set TFIDF_USE_LEGACY_DASHBOARD=1 to force legacy mode."
+        )
+        st.exception(_e)
+
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt

@@ -10,26 +10,7 @@ Validates:
 """
 
 import pytest
-import sys
-from pathlib import Path
-from io import BytesIO
-
-sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
-
-# Note: This would need to be adapted to import from dashboard/app.py
-# For now, we provide test structure that documents the expected behavior
-
-
-class MockUploadedFile:
-    """Mock Streamlit UploadedFile for testing validation."""
-    
-    def __init__(self, name: str, content: bytes, size: int = None):
-        self.name = name
-        self.content = content
-        self.size = size if size is not None else len(content)
-    
-    def getvalue(self):
-        return self.content
+from backend.utils import validate_input_file
 
 
 class TestFileValidation:
@@ -39,65 +20,60 @@ class TestFileValidation:
         """Test validation of valid PDF file."""
         # PDF magic bytes: %PDF-1.4
         pdf_content = b'%PDF-1.4\n%mock pdf content here'
-        mock_file = MockUploadedFile('test.pdf', pdf_content)
-        
-        # This would call the validate_input_file function
-        # from dashboard/app.py
-        # Expected: (True, "✅ test.pdf - Valid (0.00MB)")
+        res = validate_input_file('test.pdf', pdf_content)
+        assert res.ok is True
     
     def test_validate_invalid_pdf_magic_bytes(self):
         """Test validation rejects PDF with wrong magic bytes."""
         # Wrong magic bytes - starts with %GIF instead of %PDF
         pdf_content = b'%GIF89asome data'
-        mock_file = MockUploadedFile('fake.pdf', pdf_content)
-        
-        # Expected: (False, "Invalid PDF file: fake.pdf (wrong magic bytes). File may be corrupted.")
+        res = validate_input_file('fake.pdf', pdf_content)
+        assert res.ok is False
+        assert 'magic' in (res.reason or '').lower()
     
     def test_validate_file_size_exceeded(self):
         """Test validation rejects oversized files."""
         # Create content larger than 50MB (default limit)
         large_content = b'x' * (51 * 1024 * 1024)
-        mock_file = MockUploadedFile('large.pdf', large_content, size=51 * 1024 * 1024)
-        
-        # Expected: (False, "File exceeds 50MB limit (size: 51.0MB)")
+        res = validate_input_file('large.pdf', large_content, max_size_mb=50)
+        assert res.ok is False
+        assert 'too large' in (res.reason or '').lower()
     
     def test_validate_invalid_extension(self):
         """Test validation rejects unsupported file extensions."""
         content = b'some content'
-        mock_file = MockUploadedFile('document.docx', content)
-        
-        # Expected: (False, "File type .docx not allowed. Allowed types: pdf, txt")
+        res = validate_input_file('document.docx', content)
+        assert res.ok is False
+        assert 'unsupported' in (res.reason or '').lower()
     
     def test_validate_valid_txt_file(self):
         """Test validation of valid UTF-8 text file."""
         txt_content = "This is a valid text file with UTF-8 encoding.".encode('utf-8')
-        mock_file = MockUploadedFile('document.txt', txt_content)
-        
-        # Expected: (True, "✅ document.txt - Valid (0.00MB)")
+        res = validate_input_file('document.txt', txt_content)
+        assert res.ok is True
     
     def test_validate_txt_file_wrong_encoding(self):
         """Test validation rejects non-UTF-8 text files."""
         # Create content with invalid UTF-8
         txt_content = b'\x80\x81\x82\x83'  # Invalid UTF-8 bytes
-        mock_file = MockUploadedFile('bad.txt', txt_content)
-        
-        # Expected: (False, "Text file encoding error: bad.txt (must be UTF-8 encoded)")
+        res = validate_input_file('bad.txt', txt_content)
+        assert res.ok is False
+        assert 'utf-8' in (res.reason or '').lower()
     
     def test_validate_file_size_mb_calculation(self):
         """Test that file size is correctly converted to MB."""
         # Create 1MB file
         one_mb = b'x' * (1024 * 1024)
-        mock_file = MockUploadedFile('one_mb.txt', one_mb)
-        
-        # Expected message should show approximately 1.00MB
+        res = validate_input_file('one_mb.txt', one_mb)
+        assert res.ok is True
+        assert res.size_mb is not None
+        assert res.size_mb == pytest.approx(1.0, abs=0.05)
     
     def test_validate_multiple_file_extensions(self):
         """Test validation with custom allowed extensions."""
-        content = b'%PDF-1.4\nsome content'
-        mock_file = MockUploadedFile('document.pdf', content)
-        
-        # Should validate with extended extension list
-        # validate_input_file(mock_file, allowed_extensions=['pdf', 'txt', 'docx'])
+        content = b'some content'
+        res = validate_input_file('document.docx', content, allowed_extensions=(".pdf", ".txt", ".docx"))
+        assert res.ok is True
 
 
 class TestValidationErrorMessages:
@@ -107,30 +83,30 @@ class TestValidationErrorMessages:
         """Test that error messages include the filename."""
         # Oversized file
         content = b'x' * (51 * 1024 * 1024)
-        mock_file = MockUploadedFile('huge.pdf', content, size=51 * 1024 * 1024)
-        
-        # Expected error to include "huge.pdf"
+        res = validate_input_file('huge.pdf', content, max_size_mb=50)
+        assert res.ok is False
+        assert isinstance(res.reason, str)
     
     def test_error_message_includes_file_size(self):
         """Test that size validation errors show actual file size."""
         content = b'x' * (55 * 1024 * 1024)
-        mock_file = MockUploadedFile('too_big.pdf', content, size=55 * 1024 * 1024)
-        
-        # Expected error to include "55.0MB"
+        res = validate_input_file('too_big.pdf', content, max_size_mb=50)
+        assert res.ok is False
+        assert res.size_mb is not None
     
     def test_error_message_lists_allowed_types(self):
         """Test that extension validation shows allowed types."""
         content = b'some content'
-        mock_file = MockUploadedFile('document.xlsx', content)
-        
-        # Expected error to include "pdf, txt"
+        res = validate_input_file('document.xlsx', content)
+        assert res.ok is False
+        assert 'unsupported' in (res.reason or '').lower()
     
     def test_success_message_includes_size(self):
         """Test that success message includes file size in MB."""
         txt_content = b'x' * 500000  # ~0.48MB
-        mock_file = MockUploadedFile('document.txt', txt_content)
-        
-        # Expected success message to include "0.48MB"
+        res = validate_input_file('document.txt', txt_content)
+        assert res.ok is True
+        assert res.size_mb == pytest.approx(500000 / (1024 * 1024), abs=0.02)
 
 
 class TestSecurityValidation:
@@ -140,30 +116,23 @@ class TestSecurityValidation:
         """Test that malformed PDFs are rejected."""
         # File starts with PDF magic but is corrupted
         pdf_content = b'%PDF-1.4\n' + b'\x00' * 100  # Contains null bytes
-        mock_file = MockUploadedFile('corrupted.pdf', pdf_content)
-        
-        # Should validate magic bytes but might pass
-        # Actual content validation happens elsewhere
+        res = validate_input_file('corrupted.pdf', pdf_content)
+        # We only validate magic bytes here; deeper PDF validation is out of scope.
+        assert res.ok is True
     
     def test_validate_prevents_double_extension(self):
         """Test that files with double extensions are validated correctly."""
         # File claiming to be .txt but is actually .pdf
         pdf_content = b'%PDF-1.4\nsome pdf'
-        mock_file = MockUploadedFile('document.pdf.txt', pdf_content)
-        
-        # Should validate based on final extension (.txt)
-        # Will fail because it's actually PDF content
+        res = validate_input_file('document.pdf.txt', pdf_content)
+        assert res.ok is False
     
     def test_validate_case_insensitive_extension(self):
         """Test that extension validation is case-insensitive."""
         pdf_content = b'%PDF-1.4\nsome content'
-        mock_files = [
-            MockUploadedFile('document.PDF', pdf_content),
-            MockUploadedFile('document.Pdf', pdf_content),
-            MockUploadedFile('document.pDF', pdf_content),
-        ]
-        
-        # All should be treated as .pdf extension
+        for name in ['document.PDF', 'document.Pdf', 'document.pDF']:
+            res = validate_input_file(name, pdf_content)
+            assert res.ok is True
 
 
 class TestValidationMetrics:
