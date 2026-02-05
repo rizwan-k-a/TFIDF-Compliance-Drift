@@ -6,7 +6,13 @@ import streamlit as st
 from backend.clustering import perform_enhanced_clustering
 
 
-def render_clustering_tab(cfg: dict, internal_docs: list[dict]) -> None:
+def render_clustering_tab(
+    cfg: dict,
+    internal_docs: list[dict],
+    *,
+    shared_vectorizer=None,
+    shared_internal_matrix=None,
+) -> None:
     st.subheader("Clustering")
 
     if len(internal_docs) < 3:
@@ -25,6 +31,8 @@ def render_clustering_tab(cfg: dict, internal_docs: list[dict]) -> None:
         keep_numbers=bool(cfg.get("keep_numbers", True)),
         use_lemma=bool(cfg.get("use_lemma", False)),
         max_features=int(cfg.get("max_features", 5000)),
+        precomputed_vectorizer=shared_vectorizer,
+        precomputed_matrix=shared_internal_matrix,
     )
 
     if not res:

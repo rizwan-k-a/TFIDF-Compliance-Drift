@@ -20,6 +20,23 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 
+def _env_int(name: str, default: int) -> int:
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    try:
+        return int(raw)
+    except ValueError:
+        return default
+
+
+def _env_bool(name: str, default: bool) -> bool:
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "y", "on"}
+
+
 @dataclass(frozen=True)
 class Config:
     """Global configuration constants.
@@ -28,7 +45,6 @@ class Config:
         min_text_length: Minimum number of characters to consider text usable.
         min_words: Minimum number of tokens to consider text usable.
         max_file_size_mb: Maximum accepted upload size.
-        default_divergence_threshold: Divergence percent threshold for flagging.
         tfidf_max_features: Default TF-IDF feature cap.
         ngram_range: Default n-gram range.
         min_df: Default min_df.
@@ -37,13 +53,14 @@ class Config:
         min_page_text_length: Minimum characters on a PDF page to accept as extracted.
         ocr_dpi: DPI used for OCR rasterization.
         ocr_config: Tesseract configuration string.
+        sample_autoload_enabled: Whether sample auto-loading is enabled in the UI.
+        sample_autoload_internal_limit: Max internal sample docs to auto-load.
+        sample_autoload_guideline_limit: Max guideline sample docs to auto-load.
     """
 
     min_text_length: int = 100
     min_words: int = 20
     max_file_size_mb: int = 50
-    default_divergence_threshold: int = 40
-
     tfidf_max_features: int = 5000
     ngram_range: Tuple[int, int] = (1, 2)
     min_df: float = 0.05
@@ -54,6 +71,10 @@ class Config:
 
     ocr_dpi: int = 300
     ocr_config: str = "--psm 6"
+
+    sample_autoload_enabled: bool = True
+    sample_autoload_internal_limit: int = 10
+    sample_autoload_guideline_limit: int = 5
 
 
 def get_poppler_path() -> Optional[str]:
@@ -89,7 +110,11 @@ def get_poppler_path() -> Optional[str]:
     return None
 
 
-CONFIG = Config()
+CONFIG = Config(
+    sample_autoload_enabled=_env_bool("SAMPLE_AUTOLOAD_ENABLED", True),
+    sample_autoload_internal_limit=_env_int("SAMPLE_AUTOLOAD_INTERNAL_LIMIT", 10),
+    sample_autoload_guideline_limit=_env_int("SAMPLE_AUTOLOAD_GUIDELINE_LIMIT", 5),
+)
 
 POPPLER_PATH: Optional[str] = get_poppler_path()
 
@@ -109,8 +134,6 @@ CATEGORIES: Dict[str, Dict[str, object]] = {
             "sanhita",
         ],
         "guideline": "BNS_2023",
-        "guideline_name": "Bharatiya Nyaya Sanhita (BNS) 2023",
-        "color": "#ef4444",
     },
     "Cyber": {
         "keywords": [
@@ -126,8 +149,6 @@ CATEGORIES: Dict[str, Dict[str, object]] = {
             "encryption",
         ],
         "guideline": "IT_ACT_2021",
-        "guideline_name": "IT Act 2021",
-        "color": "#3b82f6",
     },
     "Financial": {
         "keywords": [
@@ -143,7 +164,5 @@ CATEGORIES: Dict[str, Dict[str, object]] = {
             "diligence",
         ],
         "guideline": "PMLA_2002",
-        "guideline_name": "Prevention of Money Laundering Act (PMLA) 2002",
-        "color": "#10b981",
     },
 }

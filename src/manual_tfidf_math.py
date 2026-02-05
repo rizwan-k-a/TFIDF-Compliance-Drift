@@ -1,3 +1,9 @@
+"""LEGACY — not used in main demo path.
+
+Note: This module is still imported by some tests. The Streamlit TF-IDF math
+demo uses frontend/components/tfidf_math_tab.py.
+"""
+
 """
 Manual TF-IDF and Cosine Similarity Implementation
 Academic Requirement 20 - Complete Mathematical Demonstration

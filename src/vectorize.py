@@ -1,3 +1,5 @@
+# LEGACY — not used in main demo path
+# ============================================================
 # ============================================================
 # TF-IDF VECTORIZATION MODULE
 # Robust, Academic-Safe Implementation

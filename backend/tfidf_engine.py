@@ -235,7 +235,7 @@ def vectorize_documents(
     max_features: Optional[int] = None,
     min_df: Optional[float] = None,
     max_df: Optional[float] = None,
-) -> Tuple[TfidfVectorizer, object]:
+) -> Tuple[Optional[TfidfVectorizer], Optional[object]]:
     """Convenience wrapper to vectorize a single corpus."""
 
     try:
@@ -249,5 +249,6 @@ def vectorize_documents(
             max_df=max_df,
         )
         return vectorizer, X
-    except Exception:
-        return None
+    except Exception as e:
+        logger.info("Vectorization failed: %s", e)
+        return None, None

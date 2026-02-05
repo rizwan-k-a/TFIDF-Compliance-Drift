@@ -1,4 +1,7 @@
-print("DRIFT.PY IS RUNNING")
+"""LEGACY — not used in main demo path.
+
+Kept for reference/educational purposes.
+"""
 
 """
 drift.py

@@ -4,14 +4,22 @@ CUSTOM_CSS = """
 
 /* ============ GLOBAL STYLES ============ */
 html, body, [class*="css"], .stApp {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', BlinkMacSystemFont, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
 .block-container {
-  padding: 2rem 3rem;
+  padding: 0.75rem 1.75rem 1rem 1.75rem;
   background: linear-gradient(135deg, #FFF2E2 0%, #faf6ef 100%);
-  max-width: 1400px;
+  max-width: 1600px;
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+}
+
+/* Reduce Streamlit default vertical gaps */
+.stApp [data-testid="stVerticalBlock"] > div {
+  gap: 0.5rem;
 }
 
 /* Remove default outlines/borders */
@@ -21,9 +29,11 @@ html, body, [class*="css"], .stApp {
 section[data-testid="stSidebar"] {
   background: linear-gradient(180deg, #4F633D 0%, #3d4d2f 100%);
   border-right: none;
+  width: 280px !important;
 }
 section[data-testid="stSidebar"] > div:first-child {
   background: transparent;
+  width: 280px !important;
 }
 
 .stSidebar [data-testid="stMarkdownContainer"] p,
@@ -35,8 +45,8 @@ section[data-testid="stSidebar"] > div:first-child {
 
 .stSidebar .stCheckbox > label {
   background: rgba(255, 242, 226, 0.10);
-  padding: 12px 16px;
-  border-radius: 12px;
+  padding: 8px 12px;
+  border-radius: 10px;
   transition: all 0.3s ease;
 }
 .stSidebar .stCheckbox > label:hover {
@@ -46,7 +56,15 @@ section[data-testid="stSidebar"] > div:first-child {
 
 .stSidebar hr {
   border-color: rgba(255, 242, 226, 0.30);
-  margin: 1.5rem 0;
+  margin: 0.75rem 0;
+}
+
+/* Compact sidebar content spacing */
+.sidebar-compact {
+  padding-top: 0.25rem;
+}
+.sidebar-compact h3 {
+  margin: 0 0 0.5rem 0;
 }
 
 /* ============ HEADER SECTION ============ */
@@ -56,8 +74,66 @@ h1 {
   -webkit-text-fill-color: transparent;
   background-clip: text;
   font-weight: 800;
-  font-size: 3rem;
-  margin-bottom: 0.5rem;
+  font-size: 2rem;
+  margin: 0;
+  line-height: 1.1;
+}
+
+/* Compact header block */
+.header-compact {
+  text-align: center;
+  padding: 0.4rem 0 0.5rem 0;
+  margin-bottom: 0.6rem;
+}
+.header-compact__title {
+  margin: 0;
+  line-height: 1.1;
+}
+.header-compact__subtitle {
+  font-size: 0.92rem;
+  color: #666;
+  font-weight: 500;
+  margin: 0.15rem 0 0 0;
+  line-height: 1.2;
+}
+
+/* Ensure emojis/icons remain visible inside gradient headings */
+h1 .emoji {
+  background: none !important;
+  -webkit-background-clip: initial !important;
+  -webkit-text-fill-color: #4F633D !important;
+  color: #4F633D !important;
+}
+
+/* Keep the sidebar toggle (collapsed control) visible and clickable */
+header[data-testid="stHeader"] {
+  visibility: visible;
+  background: transparent;
+  border-bottom: none;
+  z-index: 1000;
+}
+
+header[data-testid="stHeader"] [data-testid="collapsedControl"] {
+  visibility: visible;
+  opacity: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  color: #4F633D;
+}
+
+header[data-testid="stHeader"] [data-testid="collapsedControl"] svg {
+  width: 22px;
+  height: 22px;
+}
+
+header[data-testid="stHeader"] [data-testid="collapsedControl"] svg,
+header[data-testid="stHeader"] [data-testid="collapsedControl"] path {
+  fill: #4F633D;
+  stroke: #4F633D;
 }
 
 /* ============ TABS PREMIUM ============ */
@@ -93,38 +169,126 @@ h1 {
 }
 
 .stTabs [data-baseweb="tab-panel"] {
-  padding-top: 2rem;
+  padding-top: 0.9rem;
+}
+
+/* ============ UPLOAD CONTAINER (single bordered card) ============ */
+.upload-container {
+  border: 1px solid rgba(139, 161, 148, 0.40);
+  background: rgba(255, 242, 226, 0.85);
+  border-radius: 14px;
+  padding: 0.75rem 1rem 0.85rem 1rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+  margin-bottom: 0.6rem;
+}
+
+.upload-container__title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #4F633D;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.upload-container__status {
+  font-size: 0.82rem;
+  color: #777;
+  margin: 0.5rem 0 0.4rem 0;
+  text-align: center;
+}
+
+.upload-pane {
+  background: rgba(139, 161, 148, 0.08);
+  border: 1px dashed rgba(139, 161, 148, 0.45);
+  border-radius: 10px;
+  padding: 0.6rem 0.7rem;
+  min-height: 90px;
+}
+
+.upload-pane__label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #4F633D;
+  margin-bottom: 0.35rem;
+}
+
+/* ============ FILE PICKER SECTION ============ */
+.file-picker-section {
+  background: rgba(139, 161, 148, 0.06);
+  border: 1px solid rgba(139, 161, 148, 0.25);
+  border-radius: 10px;
+  padding: 0.7rem 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+.file-picker__label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #4F633D;
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.file-picker__list {
+  margin-top: 0.4rem;
+}
+
+.file-picker__count {
+  font-size: 0.8rem;
+  color: #4F633D;
+  font-weight: 500;
+  margin-top: 0.3rem;
+  padding: 0.25rem 0.5rem;
+  background: rgba(79, 99, 61, 0.1);
+  border-radius: 6px;
+  display: inline-block;
+}
+
+/* Multiselect styling inside file picker */
+.file-picker-section [data-testid="stMultiSelect"] {
+  background: #fff;
+  border-radius: 8px;
 }
 
 /* ============ FILE UPLOAD CARDS ============ */
 [data-testid="stFileUploader"] {
   background: linear-gradient(135deg, #8BA19420, #8BA19410);
   border: 2px dashed #8BA194;
-  border-radius: 20px;
-  padding: 2rem;
+  border-radius: 16px;
+  padding: 1.1rem;
   transition: all 0.4s ease;
+}
+
+/* Upload container column alignment */
+.upload-container [data-testid="stHorizontalBlock"] {
+  gap: 0.75rem;
+}
+
+.upload-container [data-testid="stFileUploader"] {
+  margin-top: 0;
 }
 
 [data-testid="stFileUploader"]:hover {
   border-color: #4F633D;
   background: linear-gradient(135deg, #4F633D15, #8BA19420);
-  box-shadow: 0 8px 24px rgba(79, 99, 61, 0.15);
-  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(79, 99, 61, 0.12);
 }
 
 [data-testid="stFileUploader"] button {
   background: linear-gradient(135deg, #4F633D, #5a7348) !important;
   color: #FFF2E2 !important;
   border: none !important;
-  border-radius: 12px !important;
-  padding: 12px 28px !important;
+  border-radius: 10px !important;
+  padding: 8px 20px !important;
   font-weight: 600 !important;
+  font-size: 0.85rem !important;
   transition: all 0.3s ease !important;
 }
 
 [data-testid="stFileUploader"] button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(79, 99, 61, 0.40);
+  box-shadow: 0 4px 12px rgba(79, 99, 61, 0.35);
 }
 
 /* ============ BUTTONS PREMIUM ============ */
@@ -149,33 +313,33 @@ h1 {
   transform: translateY(-1px);
 }
 
-/* ============ METRICS & CARDS ============ */
+/* ============ METRICS & CARDS (compact) ============ */
 [data-testid="stMetric"] {
   background: linear-gradient(135deg, #FFF2E2, #f8f4ed);
-  padding: 1.5rem;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  padding: 0.6rem 0.8rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
   border: 1px solid rgba(139, 161, 148, 0.20);
-  transition: transform 0.3s ease;
+  transition: transform 0.2s ease;
 }
 
 [data-testid="stMetric"]:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.10);
 }
 
 [data-testid="stMetric"] [data-testid="stMetricValue"] {
   color: #4F633D;
-  font-size: 2.5rem;
+  font-size: 1.5rem;
   font-weight: 700;
 }
 
 [data-testid="stMetric"] [data-testid="stMetricLabel"] {
   color: #666;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.78rem;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.4px;
 }
 
 /* ============ EXPANDER PREMIUM ============ */
@@ -264,13 +428,15 @@ h1 {
 /* ============ REMOVE DEFAULTS ============ */
 footer { visibility: hidden; }
 #MainMenu { visibility: hidden; }
-header { visibility: hidden; }
+/* Keep header visible; it contains the sidebar toggle button */
+header { visibility: visible; }
 
 /* ============ RESPONSIVE ============ */
 @media (max-width: 768px) {
   .block-container { padding: 1rem; }
   h1 { font-size: 2rem; }
   .stTabs [data-baseweb="tab"] { padding: 0 16px; font-size: 13px; }
+  .upload-section [data-testid="stHorizontalBlock"] { grid-template-columns: 1fr; }
 }
 </style>
 """

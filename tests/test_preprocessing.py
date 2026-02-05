@@ -36,13 +36,7 @@ class TestBasicPreprocessing:
         """Test that common stopwords are filtered."""
         text = "the quick brown fox jumps over the lazy dog"
         result = preprocess_text(text, keep_numbers=True, use_lemma=False)
-        
-        # Common stopwords should be removed
-        stopwords = ['the', 'over', 'is', 'are', 'and', 'or', 'a', 'an']
-        for word in stopwords:
-            # These should generally not appear (though some may slip through)
-            pass  # Just verify no crash
-        
+
         # Result should have words
         assert len(result.split()) > 0
     

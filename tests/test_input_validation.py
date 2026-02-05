@@ -137,20 +137,4 @@ class TestSecurityValidation:
 
 class TestValidationMetrics:
     """Test suite for validation metrics tracking."""
-    
-    def test_metrics_count_valid_files(self):
-        """Test that valid files are counted correctly."""
-        # Simulate multiple file validations
-        # Metrics should show: total_files, valid_files, rejected_files
-    
-    def test_metrics_track_rejection_reasons(self):
-        """Test that rejection reasons are categorized."""
-        # Different rejection reasons should be tracked separately:
-        # - "File exceeds XMB limit"
-        # - "File type .X not allowed"
-        # - "Invalid PDF file"
-        # - "Text file encoding error"
-    
-    def test_metrics_calculate_success_rate(self):
-        """Test that success rate is calculated correctly."""
-        # If 3/5 files pass: success rate should be 60%
+    pass

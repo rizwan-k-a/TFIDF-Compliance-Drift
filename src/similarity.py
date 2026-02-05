@@ -1,4 +1,8 @@
-print("SIMILARITY.PY IS RUNNING")
+"""LEGACY — not used in main demo path.
+
+Kept for reference/educational purposes.
+The Streamlit demo uses backend/similarity.py.
+"""
 
 """
 similarity.py

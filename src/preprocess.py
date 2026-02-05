@@ -1,3 +1,9 @@
+"""LEGACY — not used in main demo path.
+
+This module is kept for reference/educational purposes. The Streamlit demo uses
+the backend pipeline (backend/text_processing.py + backend/tfidf_engine.py).
+"""
+
 import re
 from typing import List
 

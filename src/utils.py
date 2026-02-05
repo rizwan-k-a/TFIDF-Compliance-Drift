@@ -1,3 +1,8 @@
+"""LEGACY — not used in main demo path.
+
+Kept for reference/educational purposes.
+"""
+
 import os
 from typing import List
 

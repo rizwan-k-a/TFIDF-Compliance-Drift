@@ -7,7 +7,10 @@ import streamlit as st
 
 from backend.document_categorization import categorize_document
 from backend.report_generator import generate_pdf
-from backend.similarity import compute_similarity_scores_by_category
+from backend.similarity import (
+    compute_similarity_scores_by_category,
+    compute_similarity_scores_by_category_from_vectors,
+)
 
 
 def get_risk_level(divergence: float) -> tuple[str, str, str]:
@@ -29,7 +32,14 @@ def get_risk_level(divergence: float) -> tuple[str, str, str]:
     return ("Critical Risk", "risk-critical", "🔴")
 
 
-def render_compliance_dashboard(cfg: dict, internal_docs: list[dict], guideline_docs: list[dict]) -> None:
+def render_compliance_dashboard(
+    cfg: dict,
+    internal_docs: list[dict],
+    guideline_docs: list[dict],
+    *,
+    shared_ref_vectors=None,
+    shared_int_vectors=None,
+) -> None:
     st.subheader("Compliance Dashboard")
 
     st.caption(
@@ -43,25 +53,46 @@ def render_compliance_dashboard(cfg: dict, internal_docs: list[dict], guideline_
     categorized_docs: Dict = {}
     categorized_guidelines: Dict = {}
 
-    for d in internal_docs:
+    internal_names_by_cat: Dict[str, list[str]] = {}
+    internal_idx_by_cat: Dict[str, list[int]] = {}
+    guideline_names_by_cat: Dict[str, list[str]] = {}
+    guideline_idx_by_cat: Dict[str, list[int]] = {}
+
+    for i, d in enumerate(internal_docs):
         cat = categorize_document(d.get("text", ""), d.get("name", ""))
         categorized_docs.setdefault(cat, {"docs": [], "names": []})
         categorized_docs[cat]["docs"].append(d.get("text", ""))
         categorized_docs[cat]["names"].append(d.get("name", ""))
 
-    for g in guideline_docs:
+        internal_names_by_cat.setdefault(cat, []).append(d.get("name", ""))
+        internal_idx_by_cat.setdefault(cat, []).append(i)
+
+    for j, g in enumerate(guideline_docs):
         cat = categorize_document(g.get("text", ""), g.get("name", ""))
         categorized_guidelines.setdefault(cat, {"docs": [], "names": []})
         categorized_guidelines[cat]["docs"].append(g.get("text", ""))
         categorized_guidelines[cat]["names"].append(g.get("name", ""))
 
-    df = compute_similarity_scores_by_category(
-        categorized_docs,
-        categorized_guidelines,
-        keep_numbers=bool(cfg.get("keep_numbers", True)),
-        use_lemma=bool(cfg.get("use_lemma", False)),
-        max_features=int(cfg.get("max_features", 5000)),
-    )
+        guideline_names_by_cat.setdefault(cat, []).append(g.get("name", ""))
+        guideline_idx_by_cat.setdefault(cat, []).append(j)
+
+    if shared_ref_vectors is not None and shared_int_vectors is not None:
+        df = compute_similarity_scores_by_category_from_vectors(
+            internal_names_by_category=internal_names_by_cat,
+            internal_indices_by_category=internal_idx_by_cat,
+            guideline_names_by_category=guideline_names_by_cat,
+            guideline_indices_by_category=guideline_idx_by_cat,
+            ref_vectors=shared_ref_vectors,
+            int_vectors=shared_int_vectors,
+        )
+    else:
+        df = compute_similarity_scores_by_category(
+            categorized_docs,
+            categorized_guidelines,
+            keep_numbers=bool(cfg.get("keep_numbers", True)),
+            use_lemma=bool(cfg.get("use_lemma", False)),
+            max_features=int(cfg.get("max_features", 5000)),
+        )
 
     if df.empty:
         st.warning("No comparable category pairs found.")

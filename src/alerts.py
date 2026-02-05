@@ -1,4 +1,7 @@
-print("ALERTS.PY IS RUNNING")
+"""LEGACY — not used in main demo path.
+
+Kept for reference/educational purposes.
+"""
 
 """
 alerts.py
@@ -14,8 +17,6 @@ def generate_alerts(drift_df: pd.DataFrame, threshold: float = -0.05) -> pd.Data
     """
     Generate alert flags based on drift threshold
     """
-    print("\nGenerating alerts...")
-
     drift_df = drift_df.copy()
 
     drift_df["alert"] = drift_df["drift"].apply(

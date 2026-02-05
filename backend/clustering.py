@@ -27,6 +27,8 @@ def perform_enhanced_clustering(
     max_features: Optional[int] = None,
     min_df: Optional[float] = None,
     max_df: Optional[float] = None,
+    precomputed_vectorizer: Optional[TfidfVectorizer] = None,
+    precomputed_matrix: Optional[object] = None,
 ) -> Optional[Dict[str, object]]:
     """Cluster documents using KMeans with metrics and PCA visualization."""
 
@@ -34,35 +36,42 @@ def perform_enhanced_clustering(
     if len(docs) < 2:
         return None
 
-    processed = [preprocess_text(d, keep_numbers=keep_numbers, use_lemmatization=use_lemma) for d in docs]
-    n_docs = len(processed)
+    if precomputed_vectorizer is not None and precomputed_matrix is not None:
+        vectorizer = precomputed_vectorizer
+        X = precomputed_matrix
+        n_docs = X.shape[0]
+        if n_docs < 2 or getattr(X, "nnz", 0) <= 0:
+            return None
+    else:
+        processed = [preprocess_text(d, keep_numbers=keep_numbers, use_lemmatization=use_lemma) for d in docs]
+        n_docs = len(processed)
 
-    adjusted_min_df = 1 if (n_docs <= 10) else (min_df if min_df is not None else max(1, int(n_docs * CONFIG.min_df)))
-    adjusted_max_df = 1.0 if (n_docs <= 10) else (max_df if (max_df is not None and max_df < 1.0) else CONFIG.max_df)
+        adjusted_min_df = 1 if (n_docs <= 10) else (min_df if min_df is not None else max(1, int(n_docs * CONFIG.min_df)))
+        adjusted_max_df = 1.0 if (n_docs <= 10) else (max_df if (max_df is not None and max_df < 1.0) else CONFIG.max_df)
 
-    try:
-        vectorizer = TfidfVectorizer(
-            max_features=max_features or CONFIG.tfidf_max_features,
-            ngram_range=CONFIG.ngram_range,
-            min_df=adjusted_min_df,
-            max_df=adjusted_max_df,
-            stop_words="english",
-            sublinear_tf=True,
-            norm="l2",
-            use_idf=True,
-            smooth_idf=True,
-        )
-        X = vectorizer.fit_transform(processed)
-    except Exception as e:
-        logger.info("TF-IDF vectorization failed (%s). Using relaxed settings.", e)
-        vectorizer = TfidfVectorizer(
-            max_features=min(1000, max_features or CONFIG.tfidf_max_features),
-            ngram_range=(1, 1),
-            min_df=1,
-            max_df=1.0,
-            stop_words=None,
-        )
-        X = vectorizer.fit_transform(processed)
+        try:
+            vectorizer = TfidfVectorizer(
+                max_features=max_features or CONFIG.tfidf_max_features,
+                ngram_range=CONFIG.ngram_range,
+                min_df=adjusted_min_df,
+                max_df=adjusted_max_df,
+                stop_words="english",
+                sublinear_tf=True,
+                norm="l2",
+                use_idf=True,
+                smooth_idf=True,
+            )
+            X = vectorizer.fit_transform(processed)
+        except Exception as e:
+            logger.info("TF-IDF vectorization failed (%s). Using relaxed settings.", e)
+            vectorizer = TfidfVectorizer(
+                max_features=min(1000, max_features or CONFIG.tfidf_max_features),
+                ngram_range=(1, 1),
+                min_df=1,
+                max_df=1.0,
+                stop_words=None,
+            )
+            X = vectorizer.fit_transform(processed)
 
     effective_n_clusters = min(int(n_clusters), max(2, n_docs - 1))
 

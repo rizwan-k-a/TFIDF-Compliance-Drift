@@ -6,7 +6,13 @@ from backend.classification import perform_classification
 from backend.document_categorization import categorize_document
 
 
-def render_classification_tab(cfg: dict, internal_docs: list[dict]) -> None:
+def render_classification_tab(
+    cfg: dict,
+    internal_docs: list[dict],
+    *,
+    shared_vectorizer=None,
+    shared_internal_matrix=None,
+) -> None:
     st.subheader("Document Classification")
 
     if len(internal_docs) < 6:
@@ -23,6 +29,8 @@ def render_classification_tab(cfg: dict, internal_docs: list[dict]) -> None:
         use_lemma=bool(cfg.get("use_lemma", False)),
         max_features=int(cfg.get("max_features", 5000)),
         use_cv=st.checkbox("Use 5-fold CV", value=False),
+        precomputed_vectorizer=shared_vectorizer,
+        precomputed_matrix=shared_internal_matrix,
     )
 
     if not res:

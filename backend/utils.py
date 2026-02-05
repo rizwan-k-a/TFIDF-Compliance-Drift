@@ -10,45 +10,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import BinaryIO, Iterable, Optional, Sequence, Tuple
 
-from .config import CONFIG, get_poppler_path
+from .config import CONFIG
 
 
 logger = logging.getLogger(__name__)
-
-
-def risk_label(
-    divergence_percent: float,
-    threshold_attention: float = 20,
-    threshold_review: float = 40,
-) -> str:
-    """Convert divergence percent to a human-readable risk label.
-
-    Args:
-        divergence_percent: Divergence percent in [0, 100].
-
-    Returns:
-        Emoji-prefixed label for UI.
-    """
-
-    if divergence_percent < threshold_attention:
-        return "✅ Safe"
-    if divergence_percent < threshold_review:
-        return "⚠️ Needs Attention"
-    return "🚨 Review Required"
-
-
-def risk_color(
-    divergence_percent: float,
-    threshold_attention: float = 20,
-    threshold_review: float = 40,
-) -> str:
-    """Return a hex color representing the risk severity."""
-
-    if divergence_percent < threshold_attention:
-        return "#10b981"
-    if divergence_percent < threshold_review:
-        return "#f59e0b"
-    return "#ef4444"
 
 
 @dataclass(frozen=True)

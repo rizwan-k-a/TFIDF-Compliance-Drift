@@ -45,6 +45,8 @@ def perform_classification(
     min_df: Optional[float] = None,
     max_df: Optional[float] = None,
     use_cv: bool = False,
+    precomputed_vectorizer: Optional[TfidfVectorizer] = None,
+    precomputed_matrix: Optional[object] = None,
 ) -> Optional[Dict[str, object]]:
     """Train NB + LR classifiers on TF-IDF vectors.
 
@@ -69,45 +71,57 @@ def perform_classification(
 
     filtered_docs: List[str] = []
     filtered_categories: List[str] = []
+    filtered_indices: List[int] = []
 
-    for doc, cat in zip(docs, cats):
+    for idx, (doc, cat) in enumerate(zip(docs, cats)):
         if cat in valid_categories:
             filtered_docs.append(doc)
             filtered_categories.append(cat)
+            filtered_indices.append(idx)
 
     excluded_count = len(docs) - len(filtered_docs)
     if len(filtered_docs) < 6:
         return None
 
-    processed_docs = [preprocess_text(d, keep_numbers=keep_numbers, use_lemmatization=use_lemma) for d in filtered_docs]
-    meaningful = [d for d in processed_docs if d and d.strip()]
-    if len(meaningful) < 2:
-        return None
-
-    primary = TfidfVectorizer(
-        max_features=max_features or CONFIG.tfidf_max_features,
-        ngram_range=CONFIG.ngram_range,
-        stop_words="english",
-        min_df=1 if (min_df is None or min_df <= 0 or len(processed_docs) <= 10) else min_df,
-        max_df=1.0 if (max_df is None or max_df >= 1.0 or len(processed_docs) <= 10) else max_df,
-    )
-
-    try:
-        X = primary.fit_transform(processed_docs)
-        vectorizer = primary
-    except ValueError:
-        relaxed = TfidfVectorizer(
-            max_features=min(1000, max_features or CONFIG.tfidf_max_features),
-            ngram_range=(1, 1),
-            stop_words=None,
-            min_df=1,
-            max_df=1.0,
-        )
+    if precomputed_vectorizer is not None and precomputed_matrix is not None:
+        vectorizer = precomputed_vectorizer
         try:
-            X = relaxed.fit_transform(processed_docs)
-            vectorizer = relaxed
+            X = precomputed_matrix[filtered_indices]
         except Exception:
             return None
+
+        if getattr(X, "nnz", 0) <= 0:
+            return None
+    else:
+        processed_docs = [preprocess_text(d, keep_numbers=keep_numbers, use_lemmatization=use_lemma) for d in filtered_docs]
+        meaningful = [d for d in processed_docs if d and d.strip()]
+        if len(meaningful) < 2:
+            return None
+
+        primary = TfidfVectorizer(
+            max_features=max_features or CONFIG.tfidf_max_features,
+            ngram_range=CONFIG.ngram_range,
+            stop_words="english",
+            min_df=1 if (min_df is None or min_df <= 0 or len(processed_docs) <= 10) else min_df,
+            max_df=1.0 if (max_df is None or max_df >= 1.0 or len(processed_docs) <= 10) else max_df,
+        )
+
+        try:
+            X = primary.fit_transform(processed_docs)
+            vectorizer = primary
+        except ValueError:
+            relaxed = TfidfVectorizer(
+                max_features=min(1000, max_features or CONFIG.tfidf_max_features),
+                ngram_range=(1, 1),
+                stop_words=None,
+                min_df=1,
+                max_df=1.0,
+            )
+            try:
+                X = relaxed.fit_transform(processed_docs)
+                vectorizer = relaxed
+            except Exception:
+                return None
     y = filtered_categories
 
     min_class_count = min(Counter(y).values())

@@ -12,6 +12,67 @@ from .config import CATEGORIES
 from .tfidf_engine import build_tfidf_vectors
 
 
+def compute_similarity_scores_by_category_from_vectors(
+    internal_names_by_category: Dict[str, list[str]],
+    internal_indices_by_category: Dict[str, list[int]],
+    guideline_names_by_category: Dict[str, list[str]],
+    guideline_indices_by_category: Dict[str, list[int]],
+    ref_vectors,
+    int_vectors,
+) -> pd.DataFrame:
+    """Compute similarity per category using a shared TF-IDF matrix.
+
+    This avoids duplicate preprocessing/vectorization across tabs by reusing the
+    already-computed TF-IDF vectors.
+
+    Args:
+        internal_names_by_category: category -> list of internal document names
+        internal_indices_by_category: category -> list of row indices into int_vectors
+        guideline_names_by_category: category -> list of guideline document names
+        guideline_indices_by_category: category -> list of row indices into ref_vectors
+        ref_vectors: TF-IDF matrix for guideline/reference docs
+        int_vectors: TF-IDF matrix for internal docs
+    """
+
+    all_results = []
+
+    for category in CATEGORIES.keys():
+        i_idx = internal_indices_by_category.get(category) or []
+        g_idx = guideline_indices_by_category.get(category) or []
+        if not i_idx or not g_idx:
+            continue
+
+        internal_names = internal_names_by_category.get(category) or []
+        guideline_names = guideline_names_by_category.get(category) or []
+
+        if not internal_names or not guideline_names:
+            continue
+
+        sim = cosine_similarity(int_vectors[i_idx], ref_vectors[g_idx])
+
+        for local_i, doc_name in enumerate(internal_names):
+            row = sim[local_i]
+            max_similarity = float(np.max(row))
+            best_match_local_idx = int(np.argmax(row))
+            matched_name = (
+                guideline_names[best_match_local_idx]
+                if best_match_local_idx < len(guideline_names)
+                else "(unknown)"
+            )
+            all_results.append(
+                {
+                    "category": category,
+                    "internal_document": doc_name,
+                    "matched_guideline": matched_name,
+                    "compliance_score": max_similarity,
+                    "similarity_percent": round(max_similarity * 100.0, 1),
+                    "divergence_percent": round((1.0 - max_similarity) * 100.0, 1),
+                }
+            )
+
+    return pd.DataFrame(all_results)
+
+
 def compute_similarity_scores_by_category(
     categorized_docs: Dict,
     categorized_guidelines: Dict,
@@ -51,7 +112,7 @@ def compute_similarity_scores_by_category(
         if total_docs < 2:
             continue
 
-        vectorizer, ref_vecs, int_vecs = build_tfidf_vectors(
+        _vectorizer, ref_vecs, int_vecs = build_tfidf_vectors(
             reference_docs=guideline_docs,
             internal_docs=internal_docs,
             keep_numbers=keep_numbers,
