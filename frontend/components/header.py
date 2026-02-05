@@ -7,7 +7,7 @@ def render_header() -> None:
     """Render compact header with title and subtitle only."""
     st.markdown(
         """
-        <div class="header-compact">
+        <div class="header-compact" style="margin-bottom: 0.2rem;">
             <h1 class="header-compact__title"><span class="emoji">📊</span> Compliance Drift Monitoring</h1>
             <p class="header-compact__subtitle">TF-IDF Analysis for Regulatory Document Compliance</p>
         </div>

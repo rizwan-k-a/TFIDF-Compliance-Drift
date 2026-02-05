@@ -27,14 +27,16 @@ def upload_documents(cfg: dict) -> Dict[str, List[dict]]:
 
     # ─── Scan available project files ───
     def _scan_folder(candidates: List[str]) -> Dict[str, str]:
-        """Returns label -> absolute path map."""
+        """Returns relative path -> absolute path map (txt/pdf only)."""
         path_map: Dict[str, str] = {}
         for folder in candidates:
             if not Path(folder).exists():
                 continue
             for info in discover_project_files(folder):
-                label = f"{info['rel']} ({info['size']})"
-                path_map[label] = info["path"]
+                rel_path = info["rel"]
+                if not rel_path.lower().endswith((".txt", ".pdf")):
+                    continue
+                path_map[rel_path] = info["path"]
         return path_map
 
     internal_paths = _scan_folder([
@@ -45,112 +47,133 @@ def upload_documents(cfg: dict) -> Dict[str, List[dict]]:
     ])
 
     # ═══════════════════════════════════════════════════════════════════════════
-    # UNIFIED DOCUMENT INPUT CONTAINER
+    # DOCUMENT INPUT (TWO-COLUMN, TABBED)
     # ═══════════════════════════════════════════════════════════════════════════
 
+    internal_folder_map = {
+        "policy_documents": [
+            "data/policy_documents",
+            "policy_documents",
+            "data/internal",
+            "data/internal_docs",
+            "internal_docs",
+        ],
+        "internal_samples": [
+            "samples/internal",
+            "samples",
+            "data/internal",
+            "data/internal_docs",
+        ],
+        "templates": [
+            "templates",
+            "data/templates",
+            "samples/templates",
+        ],
+    }
+
+    guideline_folder_map = {
+        "guideline_samples": [
+            "samples/guidelines",
+            "samples",
+            "data/guidelines",
+            "guidelines",
+        ],
+        "regulatory_docs": [
+            "data/regulatory_docs",
+            "regulatory_docs",
+            "data/guidelines",
+            "guidelines",
+        ],
+        "standards": [
+            "data/standards",
+            "standards",
+            "data/guidelines",
+            "guidelines",
+        ],
+    }
+
+    def get_files_from_folder(folder_name: str, doc_type: str) -> List[str]:
+        if doc_type == "internal":
+            candidates = internal_folder_map.get(folder_name, [])
+        else:
+            candidates = guideline_folder_map.get(folder_name, [])
+        path_map = _scan_folder(candidates)
+        return sorted(path_map.keys())
+
+    def _get_path_map(folder_name: str, doc_type: str) -> Dict[str, str]:
+        if doc_type == "internal":
+            candidates = internal_folder_map.get(folder_name, [])
+        else:
+            candidates = guideline_folder_map.get(folder_name, [])
+        return _scan_folder(candidates)
+
+    def load_files_to_session(file_list: List[str], doc_type: str) -> None:
+        st.session_state[f"{doc_type}_selected_files"] = list(file_list)
+
     with st.container():
-        st.markdown('<div class="upload-container">', unsafe_allow_html=True)
+        st.markdown("## 📁 Document Input")
 
-        # ─── Card title ───
-        st.markdown(
-            '<div class="upload-container__title">📁 Document Input</div>',
-            unsafe_allow_html=True,
-        )
+        col_internal, col_guidelines = st.columns(2)
 
-        # ═══════════════════════════════════════════════════════════════════════
-        # TWO SIDE-BY-SIDE PANELS
-        # ═══════════════════════════════════════════════════════════════════════
-        panel_left, panel_right = st.columns(2, gap="medium")
+        # LEFT COLUMN — INTERNAL DOCUMENTS
+        with col_internal:
+            st.markdown("### 📄 Internal Documents")
+            internal_tab_upload, internal_tab_existing = st.tabs(["⬆️ Upload", "📂 Choose Existing"])
 
-        # ───────────────────────────────────────────────────────────────────────
-        # LEFT PANEL: Upload New Files
-        # ───────────────────────────────────────────────────────────────────────
-        with panel_left:
-            st.markdown('<div class="input-panel">', unsafe_allow_html=True)
-            st.markdown('<div class="input-panel__header">⬆️ Upload New Files</div>', unsafe_allow_html=True)
-
-            # Two upload boxes side by side
-            up_int, up_guide = st.columns(2, gap="small")
-
-            with up_int:
-                st.markdown('<div class="upload-box-label">Internal</div>', unsafe_allow_html=True)
+            with internal_tab_upload:
                 uploaded_internal = st.file_uploader(
-                    "Internal docs",
+                    "Internal documents",
                     type=["txt", "pdf"],
                     accept_multiple_files=True,
-                    key="upload_internal",
-                    label_visibility="collapsed",
+                    key="internal_upload",
+                    help="Limit 200MB per file • TXT, PDF",
                 )
 
-            with up_guide:
-                st.markdown('<div class="upload-box-label">Guidelines</div>', unsafe_allow_html=True)
-                uploaded_guidelines = st.file_uploader(
-                    "Guideline docs",
-                    type=["txt", "pdf"],
-                    accept_multiple_files=True,
-                    key="upload_guidelines",
-                    label_visibility="collapsed",
+            with internal_tab_existing:
+                internal_folder = st.selectbox(
+                    "Folder",
+                    ["policy_documents", "internal_samples", "templates"],
+                    key="internal_folder",
                 )
-
-            st.markdown('</div>', unsafe_allow_html=True)
-
-        # ───────────────────────────────────────────────────────────────────────
-        # RIGHT PANEL: Choose Existing Files
-        # ───────────────────────────────────────────────────────────────────────
-        with panel_right:
-            st.markdown('<div class="input-panel">', unsafe_allow_html=True)
-            st.markdown('<div class="input-panel__header">📂 Choose Existing Files</div>', unsafe_allow_html=True)
-
-            # Folder source dropdown
-            folder_options = []
-            if internal_paths:
-                folder_options.append("Internal sample files")
-            if guideline_paths:
-                folder_options.append("Guideline sample files")
-
-            if folder_options:
-                selected_folder = st.selectbox(
-                    "Source folder",
-                    options=folder_options,
-                    index=0,
-                    key="existing_folder_source",
-                    label_visibility="collapsed",
-                )
-
-                # Determine which file list to show
-                if selected_folder == "Internal sample files":
-                    current_paths = internal_paths
-                    target_type = "internal"
-                else:
-                    current_paths = guideline_paths
-                    target_type = "guideline"
-
-                # Multiselect file picker
-                selected_existing = st.multiselect(
+                internal_files = get_files_from_folder(internal_folder, "internal")
+                selected_internal = st.multiselect(
                     "Select files",
-                    options=sorted(current_paths.keys()),
-                    default=[],
-                    key="existing_file_select",
-                    label_visibility="collapsed",
-                    placeholder="Click to select files...",
+                    internal_files,
+                    key="internal_selected",
+                )
+                if st.button("Load Internal Files", key="load_internal", use_container_width=True):
+                    load_files_to_session(selected_internal, "internal")
+                    st.success("Loaded internal files.")
+
+        # RIGHT COLUMN — GUIDELINE DOCUMENTS
+        with col_guidelines:
+            st.markdown("### 📋 Guideline Documents")
+            guideline_tab_upload, guideline_tab_existing = st.tabs(["⬆️ Upload", "📂 Choose Existing"])
+
+            with guideline_tab_upload:
+                uploaded_guidelines = st.file_uploader(
+                    "Guideline documents",
+                    type=["txt", "pdf"],
+                    accept_multiple_files=True,
+                    key="guideline_upload",
+                    help="Limit 200MB per file • TXT, PDF",
                 )
 
-                if selected_existing:
-                    st.markdown(
-                        f'<div class="file-count-badge">📄 {len(selected_existing)} file(s) selected</div>',
-                        unsafe_allow_html=True,
-                    )
-            else:
-                st.info("No sample files found in project folders.")
-                selected_existing = []
-                target_type = None
-                current_paths = {}
-
-            st.markdown('</div>', unsafe_allow_html=True)
-
-        # ═══════════════════════════════════════════════════════════════════════
-        # PARSE & MERGE DOCUMENTS
-        # ═══════════════════════════════════════════════════════════════════════
+            with guideline_tab_existing:
+                guideline_folder = st.selectbox(
+                    "Folder",
+                    ["guideline_samples", "regulatory_docs", "standards"],
+                    key="guideline_folder",
+                )
+                guideline_files = get_files_from_folder(guideline_folder, "guideline")
+                selected_guidelines = st.multiselect(
+                    "Select files",
+                    guideline_files,
+                    key="guideline_selected",
+                )
+                if st.button("Load Guideline Files", key="load_guidelines", use_container_width=True):
+                    load_files_to_session(selected_guidelines, "guideline")
+                    st.success("Loaded guideline files.")
 
         def parse_uploaded(files) -> List[dict]:
             """Parse uploaded files into doc dicts."""
@@ -172,10 +195,11 @@ def upload_documents(cfg: dict) -> Dict[str, List[dict]]:
                     docs.append(doc)
             return docs
 
-        def load_existing(labels: List[str], path_map: Dict[str, str]) -> List[dict]:
+        def load_existing(labels: List[str], folder_name: str, doc_type: str) -> List[dict]:
             """Load selected existing files into doc dicts."""
             if not labels:
                 return []
+            path_map = _get_path_map(folder_name, doc_type)
             paths = [path_map[l] for l in labels if l in path_map]
             docs, errors = load_selected_files(paths, use_ocr=bool(cfg.get("enable_ocr", True)))
             for err in errors:
@@ -190,12 +214,14 @@ def upload_documents(cfg: dict) -> Dict[str, List[dict]]:
         internal_from_existing: List[dict] = []
         guideline_from_existing: List[dict] = []
 
-        if selected_existing and current_paths:
-            existing_docs = load_existing(selected_existing, current_paths)
-            if target_type == "internal":
-                internal_from_existing = existing_docs
-            else:
-                guideline_from_existing = existing_docs
+        internal_selected_effective = st.session_state.get("internal_selected_files", selected_internal)
+        guideline_selected_effective = st.session_state.get("guideline_selected_files", selected_guidelines)
+
+        if internal_selected_effective:
+            internal_from_existing = load_existing(internal_selected_effective, internal_folder, "internal")
+
+        if guideline_selected_effective:
+            guideline_from_existing = load_existing(guideline_selected_effective, guideline_folder, "guideline")
 
         # Merge: uploaded + existing (dedupe by name)
         def merge_docs(list1: List[dict], list2: List[dict]) -> List[dict]:
@@ -230,25 +256,20 @@ def upload_documents(cfg: dict) -> Dict[str, List[dict]]:
                 st.warning(e)
             internal_docs = auto_docs
 
-        # ═══════════════════════════════════════════════════════════════════════
-        # STATUS + METRICS ROW
-        # ═══════════════════════════════════════════════════════════════════════
-        st.markdown(
-            f'<div class="upload-container__status">'
-            f'Loaded {len(internal_docs)} internal · {len(guideline_docs)} guideline document(s)'
-            f'</div>',
-            unsafe_allow_html=True,
-        )
+    # ═══════════════════════════════════════════════════════════════════════
+    # STATUS + METRICS ROW (IMMEDIATELY BELOW PANELS)
+    # ═══════════════════════════════════════════════════════════════════════
+    st.markdown(
+        f"Loaded {len(internal_docs)} internal · {len(guideline_docs)} guideline document(s)"
+    )
 
-        m1, m2, m3 = st.columns(3, gap="small")
-        with m1:
-            st.metric("Internal", len(internal_docs))
-        with m2:
-            st.metric("Guidelines", len(guideline_docs))
-        with m3:
-            ready = bool(internal_docs) and bool(guideline_docs)
-            st.metric("Status", "✓ Ready" if ready else "Waiting")
-
-        st.markdown('</div>', unsafe_allow_html=True)
+    m1, m2, m3 = st.columns(3, gap="small")
+    with m1:
+        st.metric("Internal", len(internal_docs))
+    with m2:
+        st.metric("Guidelines", len(guideline_docs))
+    with m3:
+        ready = bool(internal_docs) and bool(guideline_docs)
+        st.metric("Status", "✓ Ready" if ready else "Waiting")
 
     return {"internal": internal_docs, "guidelines": guideline_docs}

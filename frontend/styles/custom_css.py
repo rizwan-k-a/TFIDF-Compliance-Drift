@@ -213,6 +213,42 @@ header[data-testid="stHeader"] [data-testid="collapsedControl"] path {
   margin-bottom: 0.35rem;
 }
 
+/* ============ INPUT PANELS (side-by-side upload + existing) ============ */
+.input-panel {
+  background: rgba(139, 161, 148, 0.06);
+  border: 1px solid rgba(139, 161, 148, 0.30);
+  border-radius: 10px;
+  padding: 0.6rem 0.75rem;
+  min-height: 140px;
+}
+
+.input-panel__header {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #4F633D;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid rgba(139, 161, 148, 0.20);
+}
+
+.upload-box-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #555;
+  margin-bottom: 0.25rem;
+}
+
+.file-count-badge {
+  font-size: 0.78rem;
+  color: #4F633D;
+  font-weight: 500;
+  margin-top: 0.35rem;
+  padding: 0.2rem 0.5rem;
+  background: rgba(79, 99, 61, 0.12);
+  border-radius: 5px;
+  display: inline-block;
+}
+
 /* ============ FILE PICKER SECTION ============ */
 .file-picker-section {
   background: rgba(139, 161, 148, 0.06);
