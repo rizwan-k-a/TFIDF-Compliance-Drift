@@ -43,14 +43,26 @@ section[data-testid="stSidebar"] > div:first-child {
   font-weight: 500;
 }
 
+.stSidebar [data-testid="stMarkdownContainer"] h3 {
+  color: #FFF2E2 !important;
+  font-weight: 700 !important;
+  font-size: 1.25rem !important;
+  letter-spacing: 0.02em;
+  margin: 0.5rem 0 0.75rem 0 !important;
+  padding: 0 !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
 .stSidebar .stCheckbox > label {
   background: rgba(255, 242, 226, 0.10);
   padding: 8px 12px;
   border-radius: 10px;
+  border: 1px solid rgba(255, 242, 226, 0.25);
   transition: all 0.3s ease;
 }
 .stSidebar .stCheckbox > label:hover {
   background: rgba(255, 242, 226, 0.20);
+  border: 1px solid rgba(255, 242, 226, 0.35);
   transform: translateX(4px);
 }
 
@@ -64,7 +76,7 @@ section[data-testid="stSidebar"] > div:first-child {
   padding-top: 0.25rem;
 }
 .sidebar-compact h3 {
-  margin: 0 0 0.5rem 0;
+  margin: 0.5rem 0 0.75rem 0;
 }
 
 /* ============ HEADER SECTION ============ */
