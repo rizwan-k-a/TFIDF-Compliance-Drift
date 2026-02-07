@@ -337,7 +337,7 @@ pytest -q tests/
 
 ### Validate TF-IDF Implementation
 ```bash
-python -c "from src.manual_tfidf_math import validate_against_sklearn; validate_against_sklearn()"
+python -c "from docs.educational.manual_tfidf_math import validate_against_sklearn; validate_against_sklearn()"
 ```
 
 ### Run Setup Validator (environment checks)
@@ -419,3 +419,4 @@ Contributions welcome! Areas for enhancement:
 
 **Last Updated:** February 2026  
 **Version:** 1.0.0
+

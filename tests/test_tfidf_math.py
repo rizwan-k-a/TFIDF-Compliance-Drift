@@ -12,7 +12,7 @@ import pytest
 import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 
-from src.manual_tfidf_math import (
+from docs.educational.manual_tfidf_math import (
     compute_term_frequency,
     compute_idf_variants,
     compute_tf_variants,
@@ -88,7 +88,7 @@ class TestIDFVariants:
     
     def test_idf_variants_basic(self, sample_small_corpus):
         """Test that all 4 IDF variants return reasonable values."""
-        from src.manual_tfidf_math import preprocess_text_simple
+        from docs.educational.manual_tfidf_math import preprocess_text_simple
         
         docs = [preprocess_text_simple(d) for d in sample_small_corpus]
         idf_variants = compute_idf_variants(docs)
@@ -108,7 +108,7 @@ class TestIDFVariants:
     
     def test_idf_variants_ordering(self, sample_small_corpus):
         """Test that rarer terms have higher IDF values."""
-        from src.manual_tfidf_math import preprocess_text_simple
+        from docs.educational.manual_tfidf_math import preprocess_text_simple
         
         docs = [preprocess_text_simple(d) for d in sample_small_corpus]
         idf_variants = compute_idf_variants(docs)
@@ -126,7 +126,7 @@ class TestManualTFIDFAccuracy:
     
     def test_manual_vs_sklearn_basic(self, sample_docs):
         """Test manual TF-IDF computation matches sklearn."""
-        from src.manual_tfidf_math import preprocess_text_simple
+        from docs.educational.manual_tfidf_math import preprocess_text_simple
         
         # Preprocess documents
         processed_docs = [preprocess_text_simple(doc) for doc in sample_docs]
@@ -153,7 +153,7 @@ class TestManualTFIDFAccuracy:
     
     def test_manual_vs_sklearn_small_corpus(self, sample_small_corpus):
         """Test manual vs sklearn with minimal corpus."""
-        from src.manual_tfidf_math import preprocess_text_simple
+        from docs.educational.manual_tfidf_math import preprocess_text_simple
         
         processed_docs = [preprocess_text_simple(doc) for doc in sample_small_corpus]
         manual_tfidf = compute_manual_tfidf_complete(processed_docs, min_df=1, max_df=1.0)
@@ -168,7 +168,7 @@ class TestManualTFIDFAccuracy:
     
     def test_manual_tfidf_values_normalized(self, sample_docs):
         """Test that manual TF-IDF vectors are L2 normalized."""
-        from src.manual_tfidf_math import preprocess_text_simple
+        from docs.educational.manual_tfidf_math import preprocess_text_simple
         import math
         
         processed_docs = [preprocess_text_simple(doc) for doc in sample_docs]
@@ -208,7 +208,7 @@ class TestEdgeCaseMath:
     
     def test_high_tf_idf_scores_finite(self, sample_docs):
         """Test that TF-IDF scores remain finite (no inf/nan)."""
-        from src.manual_tfidf_math import preprocess_text_simple
+        from docs.educational.manual_tfidf_math import preprocess_text_simple
         
         processed_docs = [preprocess_text_simple(doc) for doc in sample_docs]
         manual_tfidf = compute_manual_tfidf_complete(processed_docs, min_df=1, max_df=1.0)
@@ -216,3 +216,4 @@ class TestEdgeCaseMath:
         for doc_tfidf in manual_tfidf:
             for term, score in doc_tfidf.items():
                 assert np.isfinite(score), f"Score {score} is not finite"
+

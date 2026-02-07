@@ -13,6 +13,10 @@ import pytest
 from backend.tfidf_engine import vectorize_documents
 from backend.classification import perform_classification
 
+def _is_error(result: object) -> bool:
+    return isinstance(result, dict) and bool(result.get("error"))
+
+
 
 class TestParameterValidation:
     """Test suite for parameter validation."""
@@ -44,7 +48,7 @@ class TestParameterValidation:
         )
         
         # Should handle gracefully or swap/adjust
-        assert result is None or isinstance(result, tuple)
+        assert result is None or _is_error(result) or isinstance(result, dict)
     
     def test_min_df_zero(self, sample_docs):
         """Test min_df = 0 (all terms included)."""
@@ -58,7 +62,7 @@ class TestParameterValidation:
         )
         
         # Should work
-        assert result is None or isinstance(result, tuple)
+        assert result is None or _is_error(result) or isinstance(result, dict)
     
     def test_max_df_one(self, sample_docs):
         """Test max_df = 1.0 (all terms included)."""
@@ -72,7 +76,7 @@ class TestParameterValidation:
         )
         
         # Should work
-        assert result is None or isinstance(result, tuple)
+        assert result is None or _is_error(result) or isinstance(result, dict)
     
     def test_min_df_fractional(self, sample_docs):
         """Test min_df as fractional value (document frequency)."""
@@ -86,7 +90,7 @@ class TestParameterValidation:
         )
         
         # Should work with fractional min_df
-        assert result is None or isinstance(result, tuple)
+        assert result is None or _is_error(result) or isinstance(result, dict)
 
 
 class TestEmptyDocuments:
@@ -106,7 +110,7 @@ class TestEmptyDocuments:
         )
         
         # Should handle gracefully
-        assert result is None or isinstance(result, tuple)
+        assert result is None or _is_error(result) or isinstance(result, dict)
     
     def test_all_empty_documents(self):
         """Test handling when all documents are empty."""
@@ -122,7 +126,7 @@ class TestEmptyDocuments:
         )
         
         # Should return None or handle gracefully
-        assert result is None or isinstance(result, tuple)
+        assert result is None or _is_error(result) or isinstance(result, dict)
     
     def test_whitespace_only_documents(self):
         """Test documents with only whitespace."""
@@ -138,7 +142,7 @@ class TestEmptyDocuments:
         )
         
         # Should handle gracefully
-        assert result is None or isinstance(result, tuple)
+        assert result is None or _is_error(result) or isinstance(result, dict)
 
 
 class TestSingleDocumentRejection:
@@ -158,7 +162,7 @@ class TestSingleDocumentRejection:
         )
         
         # Single doc might be rejected for IDF computation
-        assert result is None or isinstance(result, tuple)
+        assert result is None or _is_error(result) or isinstance(result, dict)
     
     def test_classification_rejects_single_doc(self):
         """Test that classification rejects single document."""
@@ -176,7 +180,7 @@ class TestSingleDocumentRejection:
         )
         
         # Should return None - insufficient documents
-        assert result is None
+        assert result is None or _is_error(result)
 
 
 class TestCategoryConstraints:
@@ -199,7 +203,7 @@ class TestCategoryConstraints:
                 max_df=1.0
             )
             # If no error, check result
-            assert result is None or isinstance(result, dict)
+            assert result is None or _is_error(result) or isinstance(result, dict)
         except (ValueError, IndexError):
             # Expected to fail with clear error
             pass
@@ -220,7 +224,7 @@ class TestCategoryConstraints:
         )
         
         # Should fail - each category has only 1 sample
-        assert result is None
+        assert result is None or _is_error(result)
 
 
 class TestSpecialDistributions:
@@ -242,7 +246,7 @@ class TestSpecialDistributions:
         )
         
         # Should classify despite identical content
-        assert result is None or isinstance(result, dict)
+        assert result is None or _is_error(result) or isinstance(result, dict)
     
     def test_very_short_documents(self):
         """Test classification with very short documents."""
@@ -260,7 +264,7 @@ class TestSpecialDistributions:
         )
         
         # Should handle gracefully
-        assert result is None or isinstance(result, dict)
+        assert result is None or _is_error(result) or isinstance(result, dict)
     
     def test_very_long_documents(self):
         """Test classification with very long documents."""
@@ -279,7 +283,7 @@ class TestSpecialDistributions:
         )
         
         # Should handle without crash
-        assert result is None or isinstance(result, dict)
+        assert result is None or _is_error(result) or isinstance(result, dict)
 
 
 class TestDataTypeValidation:
@@ -301,7 +305,7 @@ class TestDataTypeValidation:
                 min_df=1,
                 max_df=1.0
             )
-            assert result is None or isinstance(result, dict)
+            assert result is None or _is_error(result) or isinstance(result, dict)
         except (TypeError, AttributeError):
             # Expected to fail with type error
             pass
@@ -322,7 +326,7 @@ class TestDataTypeValidation:
                 min_df=1,
                 max_df=1.0
             )
-            assert result is None or isinstance(result, dict)
+            assert result is None or _is_error(result) or isinstance(result, dict)
         except (TypeError, AttributeError):
             # Expected to fail
             pass
@@ -343,7 +347,7 @@ class TestVectorizerEdgeCases:
         )
         
         # Should filter out all terms
-        assert result is None or isinstance(result, tuple)
+        assert result is None or _is_error(result) or isinstance(result, dict)
     
     def test_max_features_zero(self, sample_docs):
         """Test max_features = 0."""
@@ -357,7 +361,7 @@ class TestVectorizerEdgeCases:
         )
         
         # Should handle gracefully
-        assert result is None or isinstance(result, tuple)
+        assert result is None or _is_error(result) or isinstance(result, dict)
     
     def test_max_features_very_large(self, sample_docs):
         """Test max_features with very large value."""
@@ -371,4 +375,6 @@ class TestVectorizerEdgeCases:
         )
         
         # Should work with large max_features
-        assert result is None or isinstance(result, tuple)
+        assert result is None or _is_error(result) or isinstance(result, dict)
+
+

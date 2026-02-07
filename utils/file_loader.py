@@ -10,7 +10,8 @@ ALLOWED_EXTS = {".txt", ".pdf"}
 def _safe_relpath(file_path: Path, base_dir: Path) -> str:
     try:
         return file_path.relative_to(base_dir).as_posix()
-    except Exception:
+    except ValueError:
+        # Path is not relative to base_dir; return just filename
         return file_path.name
 
 
@@ -40,7 +41,8 @@ def discover_project_files(base_folder: str) -> List[Dict[str, str]]:
 
         try:
             size_kb = file_path.stat().st_size / 1024.0
-        except Exception:
+        except (OSError, FileNotFoundError):
+            # File stat failed (permission, race condition, etc.)
             size_kb = 0.0
 
         rel = _safe_relpath(file_path, base_dir)
@@ -66,7 +68,8 @@ def read_text_preview(file_path: str, limit: int = 200) -> str:
 
     try:
         text = p.read_text(encoding="utf-8", errors="ignore")
-    except Exception:
+    except (OSError, FileNotFoundError, PermissionError):
+        # File read failed; return empty
         return ""
 
     preview = (text or "").strip().replace("\r\n", "\n")
@@ -114,8 +117,16 @@ def load_document_from_bytes(
             return {"name": name, "text": text, "ocr_used": ocr_used, "source": source}, None
 
         return None, f"Unsupported file type: {ext or '(none)'}"
-    except Exception as e:
+    except UnicodeDecodeError as e:
+        return None, f"{name}: Text decoding failed (likely binary file)"
+    except RuntimeError as e:
+        # From extract_text_from_pdf missing pdfplumber
         return None, f"{name}: {e}"
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.exception("Unexpected error loading document %s", name)
+        return None, f"{name}: Unexpected error: {type(e).__name__}"
 
 
 def load_selected_files(
@@ -155,7 +166,12 @@ def load_selected_files(
                 continue
             if doc:
                 docs.append(doc)
+        except (OSError, MemoryError) as e:
+            errors.append(f"{p.name}: Failed to read file ({type(e).__name__})")
         except Exception as e:
-            errors.append(f"{p.name}: {e}")
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.exception("Unexpected error loading %s", p.name)
+            errors.append(f"{p.name}: Unexpected error")
 
     return docs, errors

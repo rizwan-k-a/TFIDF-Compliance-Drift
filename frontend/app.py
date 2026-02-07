@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import logging
+
 import streamlit as st
 
 from backend.tfidf_engine import build_tfidf_vectors
+from utils.logging_setup import setup_logging
 from frontend.components.compliance_dashboard import render_compliance_dashboard
 from frontend.components.classification_tab import render_classification_tab
 from frontend.components.clustering_tab import render_clustering_tab
@@ -15,7 +18,26 @@ from frontend.components.visualization_tab import render_visualization_tab
 from frontend.styles.custom_css import CUSTOM_CSS
 
 
+@st.cache_resource(show_spinner=False)
+def _cached_build_vectors(
+    reference_docs: tuple[str, ...],
+    internal_docs: tuple[str, ...],
+    keep_numbers: bool,
+    use_lemma: bool,
+    max_features: int,
+):
+    return build_tfidf_vectors(
+        reference_docs=reference_docs,
+        internal_docs=internal_docs,
+        keep_numbers=keep_numbers,
+        use_lemma=use_lemma,
+        max_features=max_features,
+    )
 def main() -> None:
+    # Initialize logging before any application logic
+    setup_logging(level=logging.INFO)
+    logger = logging.getLogger(__name__)
+    
     st.set_page_config(
         page_title="Compliance Drift Monitoring",
         page_icon="📄",
@@ -31,6 +53,12 @@ def main() -> None:
     docs = upload_documents(cfg)
     internal_docs = docs["internal"]
     guideline_docs = docs["guidelines"]
+    
+    logger.info(
+        "Documents loaded: %d internal, %d guidelines",
+        len(internal_docs),
+        len(guideline_docs),
+    )
 
     shared_vectorizer = None
     shared_ref_vectors = None
@@ -44,9 +72,9 @@ def main() -> None:
         guideline_texts = [d.get("text", "") for d in guideline_docs]
         internal_texts = [d.get("text", "") for d in internal_docs]
         try:
-            shared_vectorizer, shared_ref_vectors, shared_int_vectors = build_tfidf_vectors(
-                reference_docs=guideline_texts,
-                internal_docs=internal_texts,
+            shared_vectorizer, shared_ref_vectors, shared_int_vectors = _cached_build_vectors(
+                reference_docs=tuple(guideline_texts),
+                internal_docs=tuple(internal_texts),
                 keep_numbers=bool(cfg.get("keep_numbers", True)),
                 use_lemma=bool(cfg.get("use_lemma", False)),
                 max_features=int(cfg.get("max_features", 5000)),
@@ -55,14 +83,33 @@ def main() -> None:
                 from scipy.sparse import vstack
 
                 shared_all_vectors = vstack([shared_ref_vectors, shared_int_vectors])
-            except Exception:
+            except (ImportError, ValueError) as e:
+                logger.warning("Matrix concatenation failed: %s", e)
                 shared_all_vectors = None
 
             shared_names = [
                 *[d.get("name", "doc") for d in guideline_docs],
                 *[d.get("name", "doc") for d in internal_docs],
             ]
-        except Exception:
+        except ValueError as e:
+            st.error(f"🚨 Vectorization failed: {e}")
+            logger.error("TF-IDF vectorization error: %s", e)
+            shared_vectorizer = None
+            shared_ref_vectors = None
+            shared_int_vectors = None
+            shared_all_vectors = None
+            shared_names = None
+        except MemoryError:
+            st.error("🚨 Out of memory during vectorization. Try fewer documents or reduce max_features.")
+            logger.error("Memory exhausted during vectorization")
+            shared_vectorizer = None
+            shared_ref_vectors = None
+            shared_int_vectors = None
+            shared_all_vectors = None
+            shared_names = None
+        except Exception as e:
+            st.error(f"🚨 Unexpected error during vectorization: {type(e).__name__}: {e}")
+            logger.exception("Unexpected vectorization error")
             shared_vectorizer = None
             shared_ref_vectors = None
             shared_int_vectors = None
@@ -129,3 +176,5 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+

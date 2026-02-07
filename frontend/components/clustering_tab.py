@@ -35,6 +35,11 @@ def render_clustering_tab(
         precomputed_matrix=shared_internal_matrix,
     )
 
+    # Handle error dicts from clustering function
+    if isinstance(res, dict) and res.get("error"):
+        st.error(res.get("error"))
+        return
+
     if not res:
         st.warning("Clustering could not be computed.")
         return

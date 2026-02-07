@@ -50,53 +50,100 @@ def perform_classification(
 ) -> Optional[Dict[str, object]]:
     """Train NB + LR classifiers on TF-IDF vectors.
 
-    Filtering rules:
-      - Remove categories with < 2 samples.
-      - Require at least 6 documents after filtering (matches UI expectation).
+        Filtering rules:
+            - Do not split when dataset is small or class counts are too low.
+            - Train/evaluate on full set with warnings when needed.
 
     Returns:
-        Dict of results, or None if insufficient data.
+        Dict of results, or error dict if validation fails.
     """
+
+    # INPUT VALIDATION (prevents silent ML failures)
+    if not isinstance(test_size, (int, float)) or not (0 < test_size < 1):
+        logger.error("test_size must be in (0, 1), got %s", test_size)
+        return {"error": f"test_size must be in (0, 1), got {test_size}", "vectorizer": None}
+
+    if documents is None or categories is None:
+        logger.error("documents and categories must not be None")
+        return {"error": "documents and categories must not be None", "vectorizer": None}
+
+    if not isinstance(documents, (list, tuple)):
+        logger.error("documents must be a list of strings")
+        return {"error": "documents must be a list of strings", "vectorizer": None}
+
+    if not isinstance(categories, (list, tuple)):
+        logger.error("categories must be a list of strings")
+        return {"error": "categories must be a list of strings", "vectorizer": None}
 
     docs = list(documents)
     cats = list(categories)
 
-    if not docs or not cats or len(docs) != len(cats):
-        return None
+    if not docs or not cats:
+        logger.error("documents and categories must be non-empty")
+        return {"error": "documents and categories must be non-empty", "vectorizer": None}
+
+    if len(docs) != len(cats):
+        logger.error("Length mismatch: %d documents vs %d categories", len(docs), len(cats))
+        return {
+            "error": f"Length mismatch: {len(docs)} documents vs {len(cats)} categories",
+            "vectorizer": None,
+        }
+
+    if any(not isinstance(d, str) for d in docs):
+        logger.error("All documents must be strings")
+        return {"error": "All documents must be strings", "vectorizer": None}
+
+    if any(not isinstance(c, str) for c in cats):
+        logger.error("All categories must be strings")
+        return {"error": "All categories must be strings", "vectorizer": None}
+
+    if max_features is not None and (not isinstance(max_features, int) or max_features <= 0):
+        logger.error("max_features must be a positive integer, got %s", max_features)
+        return {"error": f"max_features must be a positive integer, got {max_features}", "vectorizer": None}
+
+    if min_df is not None and (not isinstance(min_df, (int, float)) or min_df <= 0):
+        logger.error("min_df must be > 0, got %s", min_df)
+        return {"error": f"min_df must be > 0, got {min_df}", "vectorizer": None}
+
+    if max_df is not None and (not isinstance(max_df, (int, float)) or max_df <= 0):
+        logger.error("max_df must be > 0, got %s", max_df)
+        return {"error": f"max_df must be > 0, got {max_df}", "vectorizer": None}
+
+    if isinstance(min_df, float) and min_df > 1.0:
+        logger.error("min_df as a fraction must be <= 1.0, got %s", min_df)
+        return {"error": f"min_df as a fraction must be <= 1.0, got {min_df}", "vectorizer": None}
+
+    if isinstance(max_df, float) and max_df > 1.0:
+        logger.error("max_df as a fraction must be <= 1.0, got %s", max_df)
+        return {"error": f"max_df as a fraction must be <= 1.0, got {max_df}", "vectorizer": None}
+
+    if min_df is not None and max_df is not None and min_df > max_df:
+        logger.error("min_df must be <= max_df (got %s > %s)", min_df, max_df)
+        return {"error": f"min_df must be <= max_df (got {min_df} > {max_df})", "vectorizer": None}
 
     category_counts = Counter(cats)
-    valid_categories = {cat for cat, count in category_counts.items() if count >= 2}
-    if len(valid_categories) < 2:
-        return None
-
-    filtered_docs: List[str] = []
-    filtered_categories: List[str] = []
-    filtered_indices: List[int] = []
-
-    for idx, (doc, cat) in enumerate(zip(docs, cats)):
-        if cat in valid_categories:
-            filtered_docs.append(doc)
-            filtered_categories.append(cat)
-            filtered_indices.append(idx)
-
-    excluded_count = len(docs) - len(filtered_docs)
-    if len(filtered_docs) < 6:
-        return None
+    filtered_docs = docs
+    filtered_categories = cats
+    filtered_indices = list(range(len(docs)))
+    excluded_count = 0
 
     if precomputed_vectorizer is not None and precomputed_matrix is not None:
         vectorizer = precomputed_vectorizer
         try:
             X = precomputed_matrix[filtered_indices]
         except Exception:
-            return None
+            logger.error("Precomputed matrix indexing failed")
+            return {"error": "Precomputed matrix indexing failed", "vectorizer": None}
 
         if getattr(X, "nnz", 0) <= 0:
-            return None
+            logger.error("Precomputed matrix has no non-zero entries")
+            return {"error": "Precomputed matrix has no non-zero entries", "vectorizer": None}
     else:
         processed_docs = [preprocess_text(d, keep_numbers=keep_numbers, use_lemmatization=use_lemma) for d in filtered_docs]
         meaningful = [d for d in processed_docs if d and d.strip()]
         if len(meaningful) < 2:
-            return None
+            logger.error("Not enough meaningful text for classification")
+            return {"error": "Not enough meaningful text for classification", "vectorizer": None}
 
         primary = TfidfVectorizer(
             max_features=max_features or CONFIG.tfidf_max_features,
@@ -121,14 +168,46 @@ def perform_classification(
                 X = relaxed.fit_transform(processed_docs)
                 vectorizer = relaxed
             except Exception:
-                return None
+                logger.error("TF-IDF vectorization failed (relaxed settings)")
+                return {"error": "TF-IDF vectorization failed", "vectorizer": None}
     y = filtered_categories
+    warnings: List[str] = []
+    debug: Dict[str, object] = {
+        "doc_count": len(y),
+        "class_counts": dict(Counter(y)),
+    }
 
-    min_class_count = min(Counter(y).values())
-    use_stratify = min_class_count >= 2 and (test_size * len(y) >= len(set(y)))
+    # CRITICAL: Check minimum samples per class (MUST have >= 3)
+    class_counter = Counter(y)
+    if len(class_counter) < 2:
+        error_msg = "At least 2 categories are required for classification"
+        logger.warning("Classification rejected: %s", error_msg)
+        return {"error": error_msg, "vectorizer": None}
 
-    try:
-        if use_stratify:
+    min_class_count = min(class_counter.values()) if y else 0
+    
+    if min_class_count < 3:
+        min_class_name = min(y, key=lambda c: class_counter[c]) if y else "unknown"
+        error_msg = f"Insufficient samples for class '{min_class_name}': {min_class_count} < 3 required"
+        logger.warning("Classification rejected: %s", error_msg)
+        return {"error": error_msg, "vectorizer": None}
+    
+    # Check for severe class imbalance (>10:1 ratio)
+    max_class_count = max(class_counter.values()) if y else 0
+    imbalance_ratio = max_class_count / min_class_count if min_class_count > 0 else 0
+    
+    if imbalance_ratio > 10:
+        imbalance_msg = f"Severe class imbalance detected (ratio {imbalance_ratio:.1f}:1). Results may be unreliable."
+        logger.warning("Class imbalance warning: %s", imbalance_msg)
+        warnings.append(imbalance_msg)
+
+    if len(y) < 10:
+        warnings.append("Dataset has fewer than 10 labeled documents; training on full set")
+
+    use_split = len(warnings) == 0
+
+    if use_split:
+        try:
             X_train, X_test, y_train, y_test = train_test_split(
                 X,
                 y,
@@ -136,16 +215,22 @@ def perform_classification(
                 random_state=CONFIG.random_state,
                 stratify=y,
             )
-        else:
-            X_train, X_test, y_train, y_test = train_test_split(
-                X,
-                y,
-                test_size=test_size,
-                random_state=CONFIG.random_state,
-            )
-    except Exception as e:
-        logger.info("Train/test split failed: %s", e)
-        return None
+            train_classes = set(y_train)
+            test_classes = set(y_test)
+            if train_classes != set(y) or test_classes != set(y):
+                warnings.append("Train/test split missing classes; training on full set")
+                use_split = False
+        except Exception as e:
+            logger.info("Train/test split failed: %s", e)
+            warnings.append("Train/test split failed; training on full set")
+            use_split = False
+
+    if not use_split:
+        X_train, y_train = X, y
+        X_test, y_test = X, y
+
+    debug["train_size"] = len(y_train)
+    debug["test_size"] = len(y_test)
 
     nb_model = MultinomialNB()
     nb_model.fit(X_train, y_train)
@@ -212,4 +297,7 @@ def perform_classification(
         "filtered_count": len(filtered_docs),
         "excluded_count": excluded_count,
         "category_distribution": dict(Counter(filtered_categories)),
+        "warnings": warnings,
+        "debug": debug,
     }
+

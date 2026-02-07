@@ -28,12 +28,16 @@ def render_tfidf_matrix_tab(
         vectorizer, X = shared_vectorizer, shared_matrix
     else:
         texts = [d.get("text", "") for d in docs]
-        vectorizer, X = vectorize_documents(
+        result = vectorize_documents(
             texts,
             keep_numbers=bool(cfg.get("keep_numbers", True)),
             use_lemma=bool(cfg.get("use_lemma", False)),
             max_features=int(cfg.get("max_features", 5000)),
         )
+        if isinstance(result, dict) and result.get("error"):
+            st.error(result.get("error"))
+            return
+        vectorizer, X = result.get("vectorizer"), result.get("matrix")
 
     if vectorizer is None or X is None:
         st.warning("Not enough meaningful text to build a TF-IDF matrix.")

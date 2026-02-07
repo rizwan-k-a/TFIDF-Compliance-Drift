@@ -94,6 +94,15 @@ def render_compliance_dashboard(
             max_features=int(cfg.get("max_features", 5000)),
         )
 
+    # Handle error dicts from similarity functions
+    if isinstance(df, dict):
+        if df.get("error"):
+            st.error(df.get("error"))
+            return
+        # If no error key but is dict, something unexpected happened
+        st.warning("Unexpected response from similarity computation.")
+        return
+
     if df.empty:
         st.warning("No comparable category pairs found.")
         return

@@ -80,7 +80,30 @@ def compute_manual_tfidf_complete(
     Returns a nested dict designed for direct rendering in the UI.
     """
 
+    if documents is None or sample_words is None:
+        logger.error("documents and sample_words must not be None")
+        raise ValueError("documents and sample_words must not be None")
+
+    if not isinstance(documents, (list, tuple)):
+        logger.error("documents must be a list of strings")
+        raise ValueError("documents must be a list of strings")
+
+    if not isinstance(sample_words, (list, tuple)):
+        logger.error("sample_words must be a list of strings")
+        raise ValueError("sample_words must be a list of strings")
+
     docs = list(documents)
+    if not docs:
+        logger.error("documents must be non-empty")
+        raise ValueError("documents must be non-empty")
+
+    if any(not isinstance(d, str) for d in docs):
+        logger.error("All documents must be strings")
+        raise ValueError("All documents must be strings")
+
+    if not sample_words:
+        logger.error("sample_words must be non-empty")
+        raise ValueError("sample_words must be non-empty")
     n_docs = len(docs)
 
     processed_docs = [preprocess_text(d, keep_numbers=keep_numbers, use_lemmatization=use_lemma).split() for d in docs]
@@ -136,7 +159,8 @@ def _adjust_min_df(n_docs: int, min_df: Optional[float]) -> float | int:
         return 1
 
     if min_df is None:
-        return max(1, int(n_docs * CONFIG.min_df))
+        config_min_df = float(getattr(CONFIG, "min_df", 0.01))
+        return max(1, int(n_docs * config_min_df))
 
     # If min_df provided as fraction in (0,1), convert to count
     if 0 < min_df < 1:
@@ -150,7 +174,7 @@ def _adjust_max_df(n_docs: int, max_df: Optional[float]) -> float:
         return 1.0
 
     if max_df is None:
-        return float(CONFIG.max_df)
+        return float(getattr(CONFIG, "max_df", 1.0))
 
     return float(max_df)
 
@@ -177,8 +201,51 @@ def build_tfidf_vectors(
         ValueError: If there is insufficient text for vectorization.
     """
 
+    if reference_docs is None or internal_docs is None:
+        logger.error("reference_docs and internal_docs must not be None")
+        raise ValueError("reference_docs and internal_docs must not be None")
+
+    if not isinstance(reference_docs, (list, tuple)):
+        logger.error("reference_docs must be a list of strings")
+        raise ValueError("reference_docs must be a list of strings")
+
+    if not isinstance(internal_docs, (list, tuple)):
+        logger.error("internal_docs must be a list of strings")
+        raise ValueError("internal_docs must be a list of strings")
+
     ref = list(reference_docs)
     internal = list(internal_docs)
+    if not ref and not internal:
+        logger.error("At least one document is required for TF-IDF")
+        raise ValueError("At least one document is required for TF-IDF")
+
+    if any(not isinstance(d, str) for d in ref + internal):
+        logger.error("All documents must be strings")
+        raise ValueError("All documents must be strings")
+
+    if max_features is not None and (not isinstance(max_features, int) or max_features <= 0):
+        logger.error("max_features must be a positive integer, got %s", max_features)
+        raise ValueError(f"max_features must be a positive integer, got {max_features}")
+
+    if min_df is not None and (not isinstance(min_df, (int, float)) or min_df <= 0):
+        logger.error("min_df must be > 0, got %s", min_df)
+        raise ValueError(f"min_df must be > 0, got {min_df}")
+
+    if max_df is not None and (not isinstance(max_df, (int, float)) or max_df <= 0):
+        logger.error("max_df must be > 0, got %s", max_df)
+        raise ValueError(f"max_df must be > 0, got {max_df}")
+
+    if isinstance(min_df, float) and min_df > 1.0:
+        logger.error("min_df as a fraction must be <= 1.0, got %s", min_df)
+        raise ValueError(f"min_df as a fraction must be <= 1.0, got {min_df}")
+
+    if isinstance(max_df, float) and max_df > 1.0:
+        logger.error("max_df as a fraction must be <= 1.0, got %s", max_df)
+        raise ValueError(f"max_df as a fraction must be <= 1.0, got {max_df}")
+
+    if min_df is not None and max_df is not None and min_df > max_df:
+        logger.error("min_df must be <= max_df (got %s > %s)", min_df, max_df)
+        raise ValueError(f"min_df must be <= max_df (got {min_df} > {max_df})")
     all_docs = ref + internal
 
     processed_docs = [preprocess_text(d, keep_numbers=keep_numbers, use_lemmatization=use_lemma) for d in all_docs]
@@ -191,8 +258,10 @@ def build_tfidf_vectors(
     adjusted_min_df = _adjust_min_df(n_docs, min_df)
     adjusted_max_df = _adjust_max_df(n_docs, max_df)
 
+    effective_max_features = max_features or int(getattr(CONFIG, "tfidf_max_features", 5000))
+
     primary = TfidfVectorizer(
-        max_features=max_features or CONFIG.tfidf_max_features,
+        max_features=effective_max_features,
         ngram_range=CONFIG.ngram_range,
         min_df=adjusted_min_df,
         max_df=adjusted_max_df,
@@ -209,7 +278,7 @@ def build_tfidf_vectors(
     except ValueError as e:
         logger.info("Primary TF-IDF failed (%s). Falling back to relaxed settings.", e)
         relaxed = TfidfVectorizer(
-            max_features=min(1000, max_features or CONFIG.tfidf_max_features),
+            max_features=min(1000, effective_max_features),
             ngram_range=(1, 1),
             min_df=1,
             max_df=1.0,
@@ -235,7 +304,7 @@ def vectorize_documents(
     max_features: Optional[int] = None,
     min_df: Optional[float] = None,
     max_df: Optional[float] = None,
-) -> Tuple[Optional[TfidfVectorizer], Optional[object]]:
+) -> Dict[str, object]:
     """Convenience wrapper to vectorize a single corpus."""
 
     try:
@@ -248,7 +317,7 @@ def vectorize_documents(
             min_df=min_df,
             max_df=max_df,
         )
-        return vectorizer, X
+        return {"vectorizer": vectorizer, "matrix": X}
     except Exception as e:
-        logger.info("Vectorization failed: %s", e)
-        return None, None
+        logger.error("Vectorization failed: %s", e)
+        return {"error": "Vectorization failed", "details": str(e)}

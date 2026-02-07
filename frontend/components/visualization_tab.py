@@ -17,8 +17,8 @@ def render_visualization_tab(
 
     try:
         from wordcloud import STOPWORDS, WordCloud
-    except Exception:
-        st.info("Install `wordcloud` to enable word cloud visualization.")
+    except ImportError:
+        st.info("📦 Install `wordcloud` to enable word cloud visualization: `pip install wordcloud`")
         return
 
     docs = guideline_docs + internal_docs
@@ -31,8 +31,11 @@ def render_visualization_tab(
     # Word cloud is TF-IDF weighted — used for intuitive explanation in viva.
     try:
         import numpy as np
-    except Exception as e:
-        st.warning(f"Word cloud dependencies unavailable: {e}")
+    except ImportError as e:
+        st.warning(f"📦 NumPy is required for word clouds. Install with: `pip install numpy`")
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.debug("NumPy import failed: %s", e)
         return
 
     custom_stopwords = {
@@ -56,16 +59,25 @@ def render_visualization_tab(
     else:
         try:
             from backend.tfidf_engine import vectorize_documents
-        except Exception as e:
-            st.warning(f"Word cloud dependencies unavailable: {e}")
+        except (ImportError, ModuleNotFoundError) as e:
+            st.warning(f"TF-IDF engine unavailable. Check backend module: {e}")
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error("Failed to import vectorize_documents: %s", e)
             return
 
-        vectorizer, X = vectorize_documents(
+        result = vectorize_documents(
             texts_list,
             keep_numbers=True,
             use_lemma=False,
             max_features=5000,
         )
+
+        if isinstance(result, dict) and result.get("error"):
+            st.info(result.get("error"))
+            return
+
+        vectorizer, X = result.get("vectorizer"), result.get("matrix")
 
     if vectorizer is None or X is None:
         st.info("Not enough meaningful text to build a TF-IDF-based word cloud.")
@@ -74,8 +86,16 @@ def render_visualization_tab(
     terms = vectorizer.get_feature_names_out()
     try:
         weights = np.asarray(X.mean(axis=0)).ravel()
-    except Exception:
-        weights = np.asarray(X.toarray()).mean(axis=0)
+    except (AttributeError, ValueError):
+        # Sparse matrix fallback
+        try:
+            weights = np.asarray(X.toarray()).mean(axis=0)
+        except MemoryError:
+            st.error("💾 Matrix too large to convert to dense format. Try fewer documents.")
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error("Memory exhausted converting sparse to dense matrix")
+            return
 
     weighted_terms = []
     for term, weight in zip(terms, weights):

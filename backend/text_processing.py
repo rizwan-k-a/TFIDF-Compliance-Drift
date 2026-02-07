@@ -25,6 +25,22 @@ from .config import CONFIG, POPPLER_PATH
 
 
 logger = logging.getLogger(__name__)
+ALLOWED_OCR_CONFIGS = {
+    "default": "--psm 6",
+    "single_block": "--psm 3",
+    "vertical": "--psm 5",
+}
+
+
+def _get_ocr_config() -> str:
+    key = os.environ.get("OCR_CONFIG", "default").strip().lower()
+    if not key:
+        key = "default"
+    config = ALLOWED_OCR_CONFIGS.get(key)
+    if not config:
+        logger.warning("Unknown OCR_CONFIG '%s'; using default", key)
+        config = ALLOWED_OCR_CONFIGS["default"]
+    return config
 
 
 def _ensure_str(text: object) -> str:
@@ -33,7 +49,7 @@ def _ensure_str(text: object) -> str:
     return text
 
 
-@functools.lru_cache(maxsize=512)
+@functools.lru_cache(maxsize=256)
 def preprocess_text(
     text: str,
     keep_numbers: bool = True,
@@ -88,9 +104,11 @@ def preprocess_text(
     return cleaned
 
 
-@functools.lru_cache(maxsize=32)
 def extract_text_from_pdf(file_bytes: bytes, filename: str = "document.pdf", use_ocr: bool = True) -> Tuple[str, bool, int]:
     """Extract text from a PDF with optional OCR fallback.
+
+    Note: Not cached because caching raw bytes would cause memory bloat.
+    Callers should cache results if rescan is expensive.
 
     Args:
         file_bytes: Raw PDF bytes.
@@ -138,16 +156,31 @@ def extract_text_from_pdf(file_bytes: bytes, filename: str = "document.pdf", use
                     dpi=CONFIG.ocr_dpi,
                     poppler_path=POPPLER_PATH,
                 )
+                ocr_config = _get_ocr_config()
                 ocr_text = []
                 for image in images:
-                    t = pytesseract.image_to_string(image, config=CONFIG.ocr_config)
+                    t = pytesseract.image_to_string(image, config=ocr_config)
                     if t and t.strip():
                         ocr_text.append(t)
                 if ocr_text:
                     full_text = "\n".join(ocr_text).strip()
                     ocr_used = True
+            except ImportError as e:
+                logger.warning("OCR dependencies unavailable: install pdf2image pytesseract for %s", filename)
+            except FileNotFoundError as e:
+                logger.warning("Poppler not found for PDF '%s'. Install poppler-utils or disable OCR.", filename)
+            except RuntimeError as e:
+                logger.error("OCR runtime error for '%s': %s", filename, e)
             except Exception as e:
-                logger.info("OCR fallback failed for %s: %s", filename, e)
+                logger.error("Unexpected OCR error for '%s': %s", filename, e)
+            
+            # Warn user if text is still insufficient after OCR
+            if len(full_text) < CONFIG.min_text_length:
+                logger.warning(
+                    "PDF '%s' has insufficient text (%d chars < %d required). "
+                    "Consider uploading text directly or ensure PDF is selectable.",
+                    filename, len(full_text), CONFIG.min_text_length
+                )
 
         return full_text, ocr_used, page_count
     finally:
@@ -177,3 +210,4 @@ def validate_text(text: str, doc_name: str = "document") -> Tuple[bool, str]:
         return False, f"{doc_name}: too few words"
 
     return True, "Valid"
+

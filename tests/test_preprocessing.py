@@ -11,7 +11,7 @@ Validates:
 
 import pytest
 from backend.text_processing import preprocess_text
-from src.manual_tfidf_math import preprocess_text_simple
+from docs.educational.manual_tfidf_math import preprocess_text_simple
 
 
 class TestBasicPreprocessing:
@@ -216,3 +216,4 @@ class TestEdgeCases:
         
         # Should handle without crash
         assert isinstance(result, str)
+

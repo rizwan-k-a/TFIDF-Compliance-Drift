@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import streamlit as st
+from collections import Counter
 
 from backend.classification import perform_classification
 from backend.document_categorization import categorize_document
@@ -15,12 +16,23 @@ def render_classification_tab(
 ) -> None:
     st.subheader("Document Classification")
 
-    if len(internal_docs) < 6:
-        st.info("Upload at least 6 internal documents for classification.")
+    if len(internal_docs) < 1:
+        st.info("Upload documents to begin")
         return
 
     docs = [d.get("text", "") for d in internal_docs]
     cats = [categorize_document(d.get("text", ""), d.get("name", "")) for d in internal_docs]
+
+    if len(docs) != len(cats):
+        st.error("Document/label mismatch. Please re-upload your files.")
+        return
+
+    class_counts = Counter(cats)
+    st.write("Debug info")
+    st.write({
+        "docs": len(docs),
+        "class_counts": dict(class_counts),
+    })
 
     res = perform_classification(
         documents=docs,
@@ -34,8 +46,22 @@ def render_classification_tab(
     )
 
     if not res:
-        st.warning("Insufficient labeled data after filtering categories.")
+        st.warning("Classification could not be computed.")
         return
+
+    if isinstance(res, dict) and res.get("error"):
+        st.error(res.get("error"))
+        return
+
+    for msg in res.get("warnings", []):
+        st.warning(msg)
+
+    debug = res.get("debug", {})
+    if debug:
+        st.write({
+            "train_size": debug.get("train_size"),
+            "test_size": debug.get("test_size"),
+        })
 
     c1, c2 = st.columns(2)
     c1.metric("Naive Bayes accuracy", f"{res['nb_accuracy']*100:.1f}%")

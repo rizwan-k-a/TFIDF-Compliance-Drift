@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Dict
 
 import numpy as np
@@ -10,6 +11,13 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 from .config import CATEGORIES
 from .tfidf_engine import build_tfidf_vectors
+
+logger = logging.getLogger(__name__)
+
+
+def _error_result(message: str, details: str | None = None) -> Dict[str, object]:
+    logger.error("Similarity error: %s", message)
+    return {"error": message, "details": details}
 
 
 def compute_similarity_scores_by_category_from_vectors(
@@ -34,6 +42,15 @@ def compute_similarity_scores_by_category_from_vectors(
         int_vectors: TF-IDF matrix for internal docs
     """
 
+    if not isinstance(internal_names_by_category, dict) or not isinstance(internal_indices_by_category, dict):
+        return _error_result("Invalid internal category inputs", "Expected dicts for internal names/indices")
+
+    if not isinstance(guideline_names_by_category, dict) or not isinstance(guideline_indices_by_category, dict):
+        return _error_result("Invalid guideline category inputs", "Expected dicts for guideline names/indices")
+
+    if ref_vectors is None or int_vectors is None:
+        return _error_result("Missing TF-IDF vectors", "ref_vectors and int_vectors must be provided")
+
     all_results = []
 
     for category in CATEGORIES.keys():
@@ -48,27 +65,37 @@ def compute_similarity_scores_by_category_from_vectors(
         if not internal_names or not guideline_names:
             continue
 
-        sim = cosine_similarity(int_vectors[i_idx], ref_vectors[g_idx])
+        int_vectors_cat = int_vectors[i_idx]
+        ref_vectors_cat = ref_vectors[g_idx]
 
-        for local_i, doc_name in enumerate(internal_names):
-            row = sim[local_i]
-            max_similarity = float(np.max(row))
-            best_match_local_idx = int(np.argmax(row))
-            matched_name = (
-                guideline_names[best_match_local_idx]
-                if best_match_local_idx < len(guideline_names)
-                else "(unknown)"
-            )
-            all_results.append(
-                {
-                    "category": category,
-                    "internal_document": doc_name,
-                    "matched_guideline": matched_name,
-                    "compliance_score": max_similarity,
-                    "similarity_percent": round(max_similarity * 100.0, 1),
-                    "divergence_percent": round((1.0 - max_similarity) * 100.0, 1),
-                }
-            )
+        batch_size = 100
+        for batch_start in range(0, len(internal_names), batch_size):
+            batch_end = min(batch_start + batch_size, len(internal_names))
+            batch_vectors = int_vectors_cat[batch_start:batch_end]
+            try:
+                sim = cosine_similarity(batch_vectors, ref_vectors_cat)
+            except Exception as e:
+                return _error_result("Similarity computation failed", str(e))
+
+            for row_offset, doc_name in enumerate(internal_names[batch_start:batch_end]):
+                row = sim[row_offset]
+                max_similarity = float(np.max(row))
+                best_match_local_idx = int(np.argmax(row))
+                matched_name = (
+                    guideline_names[best_match_local_idx]
+                    if best_match_local_idx < len(guideline_names)
+                    else "(unknown)"
+                )
+                all_results.append(
+                    {
+                        "category": category,
+                        "internal_document": doc_name,
+                        "matched_guideline": matched_name,
+                        "compliance_score": max_similarity,
+                        "similarity_percent": round(max_similarity * 100.0, 1),
+                        "divergence_percent": round((1.0 - max_similarity) * 100.0, 1),
+                    }
+                )
 
     return pd.DataFrame(all_results)
 
@@ -94,6 +121,12 @@ def compute_similarity_scores_by_category(
           similarity_percent, divergence_percent
     """
 
+    if not isinstance(categorized_docs, dict) or not isinstance(categorized_guidelines, dict):
+        return _error_result("Invalid categorized inputs", "Expected dicts for categorized docs and guidelines")
+
+    if not categorized_docs or not categorized_guidelines:
+        return _error_result("No categorized documents provided", "Both categorized_docs and categorized_guidelines must be non-empty")
+
     all_results = []
 
     for category in CATEGORIES.keys():
@@ -112,31 +145,41 @@ def compute_similarity_scores_by_category(
         if total_docs < 2:
             continue
 
-        _vectorizer, ref_vecs, int_vecs = build_tfidf_vectors(
-            reference_docs=guideline_docs,
-            internal_docs=internal_docs,
-            keep_numbers=keep_numbers,
-            use_lemma=use_lemma,
-            max_features=max_features,
-            min_df=min_df,
-            max_df=max_df,
-        )
-
-        sim = cosine_similarity(int_vecs, ref_vecs)
-
-        for i, doc_name in enumerate(internal_names):
-            row = sim[i]
-            max_similarity = float(np.max(row))
-            best_match_idx = int(np.argmax(row))
-            all_results.append(
-                {
-                    "category": category,
-                    "internal_document": doc_name,
-                    "matched_guideline": guideline_names[best_match_idx] if best_match_idx < len(guideline_names) else "(unknown)",
-                    "compliance_score": max_similarity,
-                    "similarity_percent": round(max_similarity * 100.0, 1),
-                    "divergence_percent": round((1.0 - max_similarity) * 100.0, 1),
-                }
+        try:
+            _vectorizer, ref_vecs, int_vecs = build_tfidf_vectors(
+                reference_docs=guideline_docs,
+                internal_docs=internal_docs,
+                keep_numbers=keep_numbers,
+                use_lemma=use_lemma,
+                max_features=max_features,
+                min_df=min_df,
+                max_df=max_df,
             )
+        except Exception as e:
+            return _error_result("TF-IDF vectorization failed", str(e))
+
+        batch_size = 100
+        for batch_start in range(0, len(internal_names), batch_size):
+            batch_end = min(batch_start + batch_size, len(internal_names))
+            batch_vectors = int_vecs[batch_start:batch_end]
+            try:
+                sim = cosine_similarity(batch_vectors, ref_vecs)
+            except Exception as e:
+                return _error_result("Similarity computation failed", str(e))
+
+            for row_offset, doc_name in enumerate(internal_names[batch_start:batch_end]):
+                row = sim[row_offset]
+                max_similarity = float(np.max(row)) if len(row) > 0 else 0.0
+                best_match_idx = int(np.argmax(row)) if len(row) > 0 else 0
+                all_results.append(
+                    {
+                        "category": category,
+                        "internal_document": doc_name,
+                        "matched_guideline": guideline_names[best_match_idx] if best_match_idx < len(guideline_names) else "(unknown)",
+                        "compliance_score": max_similarity,
+                        "similarity_percent": round(max_similarity * 100.0, 1),
+                        "divergence_percent": round((1.0 - max_similarity) * 100.0, 1),
+                    }
+                )
 
     return pd.DataFrame(all_results)

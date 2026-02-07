@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Dict, List, Tuple
 from pathlib import Path
+import time
 
 import streamlit as st
 
@@ -16,6 +17,22 @@ def _read_uploaded_file(uploaded_file) -> Tuple[bytes, str]:
     return file_bytes, filename
 
 
+MAX_UPLOADS_PER_MINUTE = 5
+RATE_LIMIT_WINDOW_SECONDS = 60
+
+
+def _check_rate_limit(key: str, max_requests: int, window_seconds: int) -> bool:
+    now = time.time()
+    hits = st.session_state.get(key, [])
+    hits = [t for t in hits if now - t < window_seconds]
+    if len(hits) >= max_requests:
+        st.session_state[key] = hits
+        return False
+    hits.append(now)
+    st.session_state[key] = hits
+    return True
+
+
 def upload_documents(cfg: dict) -> Dict[str, List[dict]]:
     """Upload and/or select internal and guideline documents.
 
@@ -25,7 +42,7 @@ def upload_documents(cfg: dict) -> Dict[str, List[dict]]:
         {"internal": [{name,text}], "guidelines": [{name,text}]}
     """
 
-    # ─── Scan available project files ───
+    # --- Scan available project files ---
     def _scan_folder(candidates: List[str]) -> Dict[str, str]:
         """Returns relative path -> absolute path map (txt/pdf only)."""
         path_map: Dict[str, str] = {}
@@ -46,9 +63,9 @@ def upload_documents(cfg: dict) -> Dict[str, List[dict]]:
         "data/guidelines", "guidelines", "samples/guidelines", "samples"
     ])
 
-    # ═══════════════════════════════════════════════════════════════════════════
+    # ================================================================
     # DOCUMENT INPUT (TWO-COLUMN, TABBED)
-    # ═══════════════════════════════════════════════════════════════════════════
+    # ================================================================
 
     internal_folder_map = {
         "policy_documents": [
@@ -111,14 +128,14 @@ def upload_documents(cfg: dict) -> Dict[str, List[dict]]:
         st.session_state[f"{doc_type}_selected_files"] = list(file_list)
 
     with st.container():
-        st.markdown("## 📁 Document Input")
+        st.markdown("## Document Input")
 
         col_internal, col_guidelines = st.columns(2)
 
-        # LEFT COLUMN — INTERNAL DOCUMENTS
+        # LEFT COLUMN - INTERNAL DOCUMENTS
         with col_internal:
-            st.markdown("### 📄 Internal Documents")
-            internal_tab_upload, internal_tab_existing = st.tabs(["⬆️ Upload", "📂 Choose Existing"])
+            st.markdown("### Internal Documents")
+            internal_tab_upload, internal_tab_existing = st.tabs(["Upload", "Choose Existing"])
 
             with internal_tab_upload:
                 uploaded_internal = st.file_uploader(
@@ -126,7 +143,7 @@ def upload_documents(cfg: dict) -> Dict[str, List[dict]]:
                     type=["txt", "pdf"],
                     accept_multiple_files=True,
                     key="internal_upload",
-                    help="Limit 200MB per file • TXT, PDF",
+                    help="Limit 200MB per file - TXT, PDF",
                 )
 
             with internal_tab_existing:
@@ -145,10 +162,10 @@ def upload_documents(cfg: dict) -> Dict[str, List[dict]]:
                     load_files_to_session(selected_internal, "internal")
                     st.success("Loaded internal files.")
 
-        # RIGHT COLUMN — GUIDELINE DOCUMENTS
+        # RIGHT COLUMN - GUIDELINE DOCUMENTS
         with col_guidelines:
-            st.markdown("### 📋 Guideline Documents")
-            guideline_tab_upload, guideline_tab_existing = st.tabs(["⬆️ Upload", "📂 Choose Existing"])
+            st.markdown("### Guideline Documents")
+            guideline_tab_upload, guideline_tab_existing = st.tabs(["Upload", "Choose Existing"])
 
             with guideline_tab_upload:
                 uploaded_guidelines = st.file_uploader(
@@ -156,7 +173,7 @@ def upload_documents(cfg: dict) -> Dict[str, List[dict]]:
                     type=["txt", "pdf"],
                     accept_multiple_files=True,
                     key="guideline_upload",
-                    help="Limit 200MB per file • TXT, PDF",
+                    help="Limit 200MB per file - TXT, PDF",
                 )
 
             with guideline_tab_existing:
@@ -175,10 +192,13 @@ def upload_documents(cfg: dict) -> Dict[str, List[dict]]:
                     load_files_to_session(selected_guidelines, "guideline")
                     st.success("Loaded guideline files.")
 
-        def parse_uploaded(files) -> List[dict]:
+        def parse_uploaded(files, rate_key: str) -> List[dict]:
             """Parse uploaded files into doc dicts."""
             docs: List[dict] = []
             if not files:
+                return docs
+            if not _check_rate_limit(rate_key, MAX_UPLOADS_PER_MINUTE, RATE_LIMIT_WINDOW_SECONDS):
+                st.error("Too many uploads. Wait 1 minute.")
                 return docs
             use_ocr = bool(cfg.get("enable_ocr", True))
             for f in files:
@@ -207,8 +227,8 @@ def upload_documents(cfg: dict) -> Dict[str, List[dict]]:
             return docs
 
         # Parse uploaded files
-        internal_from_upload = parse_uploaded(uploaded_internal)
-        guideline_from_upload = parse_uploaded(uploaded_guidelines)
+        internal_from_upload = parse_uploaded(uploaded_internal, "internal_upload_rate")
+        guideline_from_upload = parse_uploaded(uploaded_guidelines, "guideline_upload_rate")
 
         # Load selected existing files
         internal_from_existing: List[dict] = []
@@ -223,53 +243,11 @@ def upload_documents(cfg: dict) -> Dict[str, List[dict]]:
         if guideline_selected_effective:
             guideline_from_existing = load_existing(guideline_selected_effective, guideline_folder, "guideline")
 
-        # Merge: uploaded + existing (dedupe by name)
-        def merge_docs(list1: List[dict], list2: List[dict]) -> List[dict]:
-            seen = set()
-            merged = []
-            for doc in list1 + list2:
-                name = doc.get("name", "")
-                if name not in seen:
-                    seen.add(name)
-                    merged.append(doc)
-            return merged
+        # Merge and return
+        internal_docs = internal_from_upload + internal_from_existing
+        guideline_docs = guideline_from_upload + guideline_from_existing
 
-        internal_docs = merge_docs(internal_from_upload, internal_from_existing)
-        guideline_docs = merge_docs(guideline_from_upload, guideline_from_existing)
-
-        # ─── Auto-load complementary files if only one side is populated ───
-        autoload_enabled = bool(cfg.get("sample_autoload_enabled", True))
-        int_limit = int(cfg.get("sample_autoload_internal_limit", 10) or 0)
-        guide_limit = int(cfg.get("sample_autoload_guideline_limit", 5) or 0)
-
-        if autoload_enabled and internal_docs and not guideline_docs and guideline_paths and guide_limit > 0:
-            auto_paths = list(guideline_paths.values())[:guide_limit]
-            auto_docs, errs = load_selected_files(auto_paths, use_ocr=bool(cfg.get("enable_ocr", True)))
-            for e in errs:
-                st.warning(e)
-            guideline_docs = auto_docs
-
-        if autoload_enabled and guideline_docs and not internal_docs and internal_paths and int_limit > 0:
-            auto_paths = list(internal_paths.values())[:int_limit]
-            auto_docs, errs = load_selected_files(auto_paths, use_ocr=bool(cfg.get("enable_ocr", True)))
-            for e in errs:
-                st.warning(e)
-            internal_docs = auto_docs
-
-    # ═══════════════════════════════════════════════════════════════════════
-    # STATUS + METRICS ROW (IMMEDIATELY BELOW PANELS)
-    # ═══════════════════════════════════════════════════════════════════════
-    st.markdown(
-        f"Loaded {len(internal_docs)} internal · {len(guideline_docs)} guideline document(s)"
-    )
-
-    m1, m2, m3 = st.columns(3, gap="small")
-    with m1:
-        st.metric("Internal", len(internal_docs))
-    with m2:
-        st.metric("Guidelines", len(guideline_docs))
-    with m3:
-        ready = bool(internal_docs) and bool(guideline_docs)
-        st.metric("Status", "✓ Ready" if ready else "Waiting")
-
-    return {"internal": internal_docs, "guidelines": guideline_docs}
+        return {
+            "internal": internal_docs,
+            "guidelines": guideline_docs,
+        }
