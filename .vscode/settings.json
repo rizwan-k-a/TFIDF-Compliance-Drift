@@ -118,5 +118,8 @@
         "vectorizes",
         "workspace",
         "XSRF"
-    ]
+    ],
+    "chat.tools.terminal.autoApprove": {
+        "tesseract": true
+    }
 }

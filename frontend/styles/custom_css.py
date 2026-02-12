@@ -55,11 +55,39 @@ section[data-testid="stSidebar"] > div:first-child {
 
 .stSidebar .stCheckbox > label {
   background: rgba(255, 242, 226, 0.10);
-  padding: 8px 12px;
+  padding: 12px 12px;
   border-radius: 10px;
   border: 1px solid rgba(255, 242, 226, 0.25);
   transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 55px;
+  width: 270px !important;
+  box-sizing: border-box;
+  gap: 10px;
+  overflow: visible;
 }
+
+.stSidebar .stCheckbox > label > span:first-child {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 0px;
+}
+
+.stSidebar .stCheckbox > label > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 1;
+  height: 55px;
+  overflow: visible;
+}
+
 .stSidebar .stCheckbox > label:hover {
   background: rgba(255, 242, 226, 0.20);
   border: 1px solid rgba(255, 242, 226, 0.35);

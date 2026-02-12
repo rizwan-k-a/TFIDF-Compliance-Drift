@@ -16,6 +16,11 @@ import os
 import pdfplumber
 import pytesseract
 from pdf2image import convert_from_path
+# pypdfium2 can render PDF pages to images without Poppler; use as a fallback
+try:
+    import pypdfium2 as pdfium
+except Exception:
+    pdfium = None
 
 # ============================================================
 # CONFIGURATION
@@ -32,6 +37,17 @@ PDF_FILES = [
 
 POPPLER_PATH = r"C:\Program Files\poppler-25.12.0\Library\bin"
 MIN_LINE_LENGTH = 30
+
+
+# Allow disabling OCR if system tesseract/poppler are not available.
+# Set env var `OCR_ENABLED=0` to disable OCR behavior.
+OCR_ENABLED = os.environ.get("OCR_ENABLED", "1").strip().lower() in (
+    "1",
+    "true",
+    "yes",
+    "y",
+    "on",
+)
 
 # ============================================================
 # CLEANING
@@ -65,12 +81,42 @@ def extract_pdf_text(pdf_path: str) -> str:
                     poppler_path=POPPLER_PATH
                 )
 
-                ocr_text = pytesseract.image_to_string(
-                    images[0],
-                    lang="eng",
-                    config="--psm 6"
-                )
-                pages.append(ocr_text)
+                if OCR_ENABLED:
+                    ocr_text = pytesseract.image_to_string(
+                        images[0],
+                        lang="eng",
+                        config="--psm 6"
+                    )
+                    pages.append(ocr_text)
+                else:
+                    # OCR disabled; append empty string for this page and warn
+                    print(f"OCR disabled via OCR_ENABLED; skipping OCR for {pdf_path} page {i+1}")
+                    pages.append("")
+                else:
+                    # convert_from_path failed (likely Poppler missing). Try pypdfium2
+                    if pdfium is not None and OCR_ENABLED:
+                        try:
+                            doc = pdfium.PdfDocument(pdf_path)
+                            page = doc.get_page(i)
+                            pil_image = page.render_topil()
+                            ocr_text = pytesseract.image_to_string(pil_image, lang="eng", config="--psm 6")
+                            pages.append(ocr_text)
+                        except Exception as e:
+                            print(f"Fallback rendering failed for {pdf_path} page {i+1}: {e}")
+                            pages.append("")
+                        finally:
+                            try:
+                                page.close()
+                            except Exception:
+                                pass
+                            try:
+                                doc.close()
+                            except Exception:
+                                pass
+                    else:
+                        # No available renderer; append empty string and warn
+                        print(f"No PDF renderer available for {pdf_path} page {i+1}; skipping OCR")
+                        pages.append("")
 
     return "\n".join(pages)
 
