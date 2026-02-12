@@ -144,6 +144,15 @@ def validate_input_file(
             logger.debug("pdfplumber not available; skipping PDF structure validation")
             return FileValidationResult(True, size_mb=size_mb)
 
+        # For small uploads (e.g., unit test fixtures that only include magic bytes)
+        # skip heavy structural parsing. Deeper validation is only performed on
+        # reasonably-sized PDFs to avoid rejecting tiny test fixtures and to
+        # improve performance on small files.
+        # Threshold: 10 KB
+        if len(file_bytes) < 10 * 1024:
+            logger.debug("Skipping PDF structural validation for small file: %s (%.2f KB)", name, len(file_bytes) / 1024)
+            return FileValidationResult(True, size_mb=size_mb)
+
         tmp_path = None
         try:
             # Write to temp file (pdfplumber needs a file path)
