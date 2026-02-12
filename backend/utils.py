@@ -137,14 +137,6 @@ def validate_input_file(
     # ────────────────────────────────────────────────────────────────────────
 
     if suffix == ".pdf":
-        # Small PDFs (e.g. synthetic test inputs or single-line headers)
-        # are allowed to pass without invoking pdfplumber's heavy parsing.
-        # This keeps unit tests stable in environments where pdfplumber is
-        # available but the PDF content is only a header or tiny placeholder.
-        if len(file_bytes) < 1024:
-            logger.debug("PDF small (<1KB); skipping PDF structure validation for: %s", name)
-            return FileValidationResult(True, size_mb=size_mb)
-
         try:
             import pdfplumber
         except ImportError:

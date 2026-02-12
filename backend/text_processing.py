@@ -43,18 +43,6 @@ def _get_ocr_config() -> str:
     return config
 
 
-# Global toggle to allow disabling OCR at runtime (useful if system tesseract
-# or poppler are not available). Set env var `OCR_ENABLED=0` or `false` to
-# disable OCR.
-OCR_ENABLED: bool = os.environ.get("OCR_ENABLED", "1").strip().lower() in {
-    "1",
-    "true",
-    "yes",
-    "y",
-    "on",
-}
-
-
 def _ensure_str(text: object) -> str:
     if not text or not isinstance(text, str):
         return ""
@@ -159,37 +147,34 @@ def extract_text_from_pdf(file_bytes: bytes, filename: str = "document.pdf", use
         full_text = "\n".join(text_chunks).strip()
 
         if len(full_text) < CONFIG.min_text_length and use_ocr:
-            if not OCR_ENABLED:
-                logger.info("OCR disabled via OCR_ENABLED; skipping OCR for %s", filename)
-            else:
-                try:
-                    from pdf2image import convert_from_path
-                    import pytesseract
+            try:
+                from pdf2image import convert_from_path
+                import pytesseract
 
-                    images = convert_from_path(
-                        tmp_path,
-                        dpi=CONFIG.ocr_dpi,
-                        poppler_path=POPPLER_PATH,
-                    )
-                    ocr_config = _get_ocr_config()
-                    ocr_text = []
-                    for image in images:
-                        t = pytesseract.image_to_string(image, config=ocr_config)
-                        if t and t.strip():
-                            ocr_text.append(t)
-                    if ocr_text:
-                        full_text = "\n".join(ocr_text).strip()
-                        ocr_used = True
-                except ImportError:
-                    logger.warning("OCR dependencies unavailable: install pdf2image pytesseract for %s", filename)
-                except FileNotFoundError:
-                    logger.warning("Poppler not found for PDF '%s'. Install poppler-utils or disable OCR.", filename)
-                except RuntimeError as e:
-                    logger.error("OCR runtime error for '%s': %s", filename, e)
-                except Exception as e:
-                    logger.error("Unexpected OCR error for '%s': %s", filename, e)
-
-            # Warn user if text is still insufficient after OCR (or skipping OCR)
+                images = convert_from_path(
+                    tmp_path,
+                    dpi=CONFIG.ocr_dpi,
+                    poppler_path=POPPLER_PATH,
+                )
+                ocr_config = _get_ocr_config()
+                ocr_text = []
+                for image in images:
+                    t = pytesseract.image_to_string(image, config=ocr_config)
+                    if t and t.strip():
+                        ocr_text.append(t)
+                if ocr_text:
+                    full_text = "\n".join(ocr_text).strip()
+                    ocr_used = True
+            except ImportError as e:
+                logger.warning("OCR dependencies unavailable: install pdf2image pytesseract for %s", filename)
+            except FileNotFoundError as e:
+                logger.warning("Poppler not found for PDF '%s'. Install poppler-utils or disable OCR.", filename)
+            except RuntimeError as e:
+                logger.error("OCR runtime error for '%s': %s", filename, e)
+            except Exception as e:
+                logger.error("Unexpected OCR error for '%s': %s", filename, e)
+            
+            # Warn user if text is still insufficient after OCR
             if len(full_text) < CONFIG.min_text_length:
                 logger.warning(
                     "PDF '%s' has insufficient text (%d chars < %d required). "
