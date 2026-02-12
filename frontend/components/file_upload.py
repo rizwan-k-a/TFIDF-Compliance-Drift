@@ -9,6 +9,7 @@ import streamlit as st
 from backend.utils import validate_input_file
 from utils.file_loader import load_document_from_bytes
 from utils.file_loader import discover_project_files, load_selected_files
+from backend.config import POPPLER_PATH
 
 
 def _read_uploaded_file(uploaded_file) -> Tuple[bytes, str]:
@@ -129,6 +130,13 @@ def upload_documents(cfg: dict) -> Dict[str, List[dict]]:
 
     with st.container():
         st.markdown("## Document Input")
+
+        # Inform users if Poppler is not detected — improves OCR performance
+        if POPPLER_PATH is None:
+            st.info(
+                "Poppler (pdftoppm) not found. For more reliable and faster OCR, "
+                "install Poppler and add its `bin` to PATH. On Windows (elevated PowerShell): `choco install poppler -y`."
+            )
 
         col_internal, col_guidelines = st.columns(2)
 

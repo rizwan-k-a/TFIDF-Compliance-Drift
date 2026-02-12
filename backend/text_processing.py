@@ -162,32 +162,98 @@ def extract_text_from_pdf(file_bytes: bytes, filename: str = "document.pdf", use
             if not OCR_ENABLED:
                 logger.info("OCR disabled via OCR_ENABLED; skipping OCR for %s", filename)
             else:
+                # Primary OCR path: pdf2image + pytesseract (uses Poppler)
                 try:
                     from pdf2image import convert_from_path
                     import pytesseract
 
-                    images = convert_from_path(
-                        tmp_path,
-                        dpi=CONFIG.ocr_dpi,
-                        poppler_path=POPPLER_PATH,
-                    )
-                    ocr_config = _get_ocr_config()
-                    ocr_text = []
-                    for image in images:
-                        t = pytesseract.image_to_string(image, config=ocr_config)
-                        if t and t.strip():
-                            ocr_text.append(t)
-                    if ocr_text:
-                        full_text = "\n".join(ocr_text).strip()
-                        ocr_used = True
+                    try:
+                        images = convert_from_path(
+                            tmp_path,
+                            dpi=CONFIG.ocr_dpi,
+                            poppler_path=POPPLER_PATH,
+                        )
+                        ocr_config = _get_ocr_config()
+                        ocr_text = []
+                        for image in images:
+                            t = pytesseract.image_to_string(image, config=ocr_config)
+                            if t and t.strip():
+                                ocr_text.append(t)
+                        if ocr_text:
+                            full_text = "\n".join(ocr_text).strip()
+                            ocr_used = True
+                    except FileNotFoundError:
+                        # Poppler not available — attempt a pypdfium2 fallback
+                        logger.info("Poppler not found; attempting pypdfium2 fallback for %s", filename)
+                        try:
+                            import pytesseract
+                            import pypdfium2 as pdfium
+
+                            ocr_text = []
+                            # Render each page via pdfium and OCR it
+                            for i in range(page_count):
+                                try:
+                                    page = None
+                                    doc = pdfium.PdfDocument(tmp_path)
+                                    page = doc.get_page(i)
+                                    pil_image = page.render_topil()
+                                    t = pytesseract.image_to_string(pil_image, config=_get_ocr_config())
+                                    if t and t.strip():
+                                        ocr_text.append(t)
+                                except Exception as e:
+                                    logger.warning("pdfium fallback page render failed for %s page %d: %s", filename, i+1, e)
+                                finally:
+                                    try:
+                                        if page is not None:
+                                            page.close()
+                                    except Exception:
+                                        pass
+                                    try:
+                                        if 'doc' in locals():
+                                            doc.close()
+                                    except Exception:
+                                        pass
+
+                            if ocr_text:
+                                full_text = "\n".join(ocr_text).strip()
+                                ocr_used = True
+                        except Exception:
+                            logger.warning("pypdfium2 OCR fallback unavailable or failed for %s", filename)
                 except ImportError:
-                    logger.warning("OCR dependencies unavailable: install pdf2image pytesseract for %s", filename)
-                except FileNotFoundError:
-                    logger.warning("Poppler not found for PDF '%s'. Install poppler-utils or disable OCR.", filename)
-                except RuntimeError as e:
-                    logger.error("OCR runtime error for '%s': %s", filename, e)
-                except Exception as e:
-                    logger.error("Unexpected OCR error for '%s': %s", filename, e)
+                    # pdf2image or pytesseract not installed; try pypdfium2 + pytesseract
+                    try:
+                        import pytesseract
+                        import pypdfium2 as pdfium
+
+                        ocr_text = []
+                        for i in range(page_count):
+                            try:
+                                page = None
+                                doc = pdfium.PdfDocument(tmp_path)
+                                page = doc.get_page(i)
+                                pil_image = page.render_topil()
+                                t = pytesseract.image_to_string(pil_image, config=_get_ocr_config())
+                                if t and t.strip():
+                                    ocr_text.append(t)
+                            except Exception as e:
+                                logger.warning("pypdfium2 OCR page failed for %s page %d: %s", filename, i+1, e)
+                            finally:
+                                try:
+                                    if page is not None:
+                                        page.close()
+                                except Exception:
+                                    pass
+                                try:
+                                    if 'doc' in locals():
+                                        doc.close()
+                                except Exception:
+                                    pass
+
+                        if ocr_text:
+                            full_text = "\n".join(ocr_text).strip()
+                            ocr_used = True
+                    except Exception:
+                        logger.warning("OCR dependencies unavailable: install pdf2image pytesseract or pypdfium2 for %s", filename)
 
             # Warn user if text is still insufficient after OCR (or skipping OCR)
             if len(full_text) < CONFIG.min_text_length:
