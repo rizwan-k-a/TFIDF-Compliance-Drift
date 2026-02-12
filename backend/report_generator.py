@@ -8,7 +8,28 @@ import pandas as pd
 from fpdf import FPDF
 
 
-def generate_pdf(results_df: pd.DataFrame) -> BytesIO:
+# Default footer text used on every page. Change as desired.
+DEFAULT_FOOTER = "TF-IDF Compliance Drift — MCA DataScience Project — Rizwan K A"
+
+
+class PDFReport(FPDF):
+    """Custom FPDF with a professional footer on every page."""
+
+    def __init__(self, footer_text: str = DEFAULT_FOOTER, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._footer_text = footer_text
+
+    def footer(self):
+        # Position at 15 mm from bottom
+        self.set_y(-15)
+        self.set_font("Helvetica", "I", 8)
+        # Footer text on the left
+        self.cell(0, 8, self._footer_text, align="L")
+        # Page number on the right
+        self.cell(0, 8, f"Page {self.page_no()}", align="R")
+
+
+def generate_pdf(results_df: pd.DataFrame, footer_text: str = DEFAULT_FOOTER) -> BytesIO:
     """Generate a categorized compliance audit PDF.
 
     Args:
@@ -20,7 +41,7 @@ def generate_pdf(results_df: pd.DataFrame) -> BytesIO:
     """
 
     buffer = BytesIO()
-    pdf = FPDF()
+    pdf = PDFReport(footer_text=footer_text)
     pdf.add_page()
     pdf.set_font("Helvetica", "B", 16)
     pdf.cell(0, 10, "COMPLIANCE AUDIT REPORT - CATEGORIZED", ln=True, align="C")
