@@ -17,6 +17,17 @@ html, body, [class*="css"], .stApp {
   width: 100%;
 }
 
+/* Shift main content to account for sidebar width on larger screens without causing overflow */
+@media (min-width: 769px) {
+  .block-container {
+    box-sizing: border-box;
+    margin-left: 280px;
+    width: calc(100% - 280px);
+    max-width: calc(1600px - 280px);
+  }
+  /* avoid accidental horizontal scroll from small layout shifts */
+  html, body { overflow-x: hidden; }
+}
 /* Reduce Streamlit default vertical gaps */
 .stApp [data-testid="stVerticalBlock"] > div {
   gap: 0.5rem;
@@ -34,6 +45,52 @@ section[data-testid="stSidebar"] {
 section[data-testid="stSidebar"] > div:first-child {
   background: transparent;
   width: 280px !important;
+  padding: 1rem 0.9rem;
+}
+
+/* Make sidebar controls use full available width and match reference spacing */
+.stSidebar .stCheckbox > label,
+.stSidebar [data-testid="stSlider"] {
+  display: block !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+.stSidebar .stCheckbox > label {
+  padding: 10px 12px !important;
+  border-radius: 10px !important;
+}
+.sidebar-compact {
+  padding-top: 0.4rem;
+  padding-bottom: 0.6rem;
+}
+
+/* Fine tuning to better match reference visuals */
+section[data-testid="stSidebar"] {
+  min-height: 100vh;
+  padding-top: 1.6rem;
+  padding-left: 14px;
+  padding-right: 14px;
+}
+
+.stSidebar .stCheckbox > label {
+  background: rgba(255, 242, 226, 0.06) !important;
+  border: 1px solid rgba(255, 242, 226, 0.08) !important;
+  color: #FFF2E2 !important;
+  font-weight: 600 !important;
+}
+
+.stSidebar .stSlider .css-1q8dd3e { /* slider track container fallback */
+  width: 100% !important;
+}
+
+/* Reduce top gap so header aligns visually closer to reference */
+.block-container {
+  padding-top: 0.4rem;
+}
+
+/* Slightly bump header toward top center */
+h1 {
+  margin-top: 0.2rem;
 }
 
 .stSidebar [data-testid="stMarkdownContainer"] p,

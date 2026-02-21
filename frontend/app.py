@@ -1,8 +1,15 @@
 from __future__ import annotations
 
 import logging
+import os
+import sys
 
 import streamlit as st
+
+# Ensure project root is on sys.path so imports like `from backend...` work
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if ROOT_DIR not in sys.path:
+    sys.path.insert(0, ROOT_DIR)
 
 from backend.tfidf_engine import build_tfidf_vectors
 from utils.logging_setup import setup_logging

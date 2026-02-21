@@ -1,19 +1,43 @@
-numpy>=1.21
-pandas>=1.3
-scikit-learn>=1.0
-streamlit>=1.20
+# Combined requirements (merged from requirements.txt and requirements-dev.txt)
+# Duplicates removed; dev/test tools appended below.
 
-# Text processing (optional lemmatization)
+# Core runtime dependencies
+numpy>=1.21.0
+pandas>=1.3.0
+scikit-learn>=1.0.0
+streamlit>=1.20.0
+
+# Text processing
 nltk>=3.7
 
-# PDF + OCR pipeline (optional but used when PDFs uploaded)
-pdfplumber>=0.7
-pdf2image>=1.16
+# PDF + OCR pipeline
+pdfplumber>=0.7.0
+pdf2image>=1.16.0
 pytesseract>=0.3.10
-pillow>=9.0
+pillow>=9.0.0
 
 # Reporting
-fpdf2>=2.7
+fpdf2>=2.7.0
 
 # Optional visualization
-wordcloud>=1.9
+wordcloud>=1.9.0
+
+# Development / Testing / Documentation tools (from requirements-dev.txt)
+pytest>=7.0.0
+pytest-cov>=4.0.0
+pytest-xdist>=3.0.0
+pytest-timeout>=2.1.0
+
+black>=22.0.0
+isort>=5.10.0
+flake8>=4.0.0
+pylint>=2.12.0
+mypy>=0.950
+
+ipython>=7.0.0
+jupyter>=1.0.0
+notebook>=6.0.0
+jupyterlab>=3.0.0
+
+sphinx>=4.5.0
+sphinx-rtd-theme>=1.0.0
