@@ -21,9 +21,9 @@ html, body, [class*="css"], .stApp {
 @media (min-width: 769px) {
   .block-container {
     box-sizing: border-box;
-    margin-left: 280px;
-    width: calc(100% - 280px);
-    max-width: calc(1600px - 280px);
+    margin-left: 260px;
+    width: calc(100% - 260px);
+    max-width: calc(1600px - 260px);
   }
   /* avoid accidental horizontal scroll from small layout shifts */
   html, body { overflow-x: hidden; }
@@ -33,19 +33,20 @@ html, body, [class*="css"], .stApp {
   gap: 0.5rem;
 }
 
-/* Remove default outlines/borders */
-*:focus { outline: none !important; box-shadow: none !important; }
+/* Accessibility: keep a subtle focus ring for keyboard users */
+*:focus { outline: 3px solid rgba(139,161,148,0.12) !important; box-shadow: none !important; }
 
 /* ============ SIDEBAR PREMIUM ============ */
 section[data-testid="stSidebar"] {
-  background: linear-gradient(180deg, #4F633D 0%, #3d4d2f 100%);
+  /* soften sidebar tone and slightly reduce width to improve main content space */
+  background: linear-gradient(180deg, rgba(79,99,61,0.92) 0%, rgba(61,77,47,0.90) 100%);
   border-right: none;
-  width: 280px !important;
+  width: 260px !important;
 }
 section[data-testid="stSidebar"] > div:first-child {
   background: transparent;
-  width: 280px !important;
-  padding: 1rem 0.9rem;
+  width: 260px !important;
+  padding: 1rem 0.85rem;
 }
 
 /* Make sidebar controls use full available width and match reference spacing */
@@ -77,6 +78,36 @@ section[data-testid="stSidebar"] {
   border: 1px solid rgba(255, 242, 226, 0.08) !important;
   color: #FFF2E2 !important;
   font-weight: 600 !important;
+  font-size: 0.95rem !important;
+}
+
+/* Make checkboxes appear as compact option cards */
+.stSidebar .stCheckbox > label {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 0.5rem !important;
+}
+.stSidebar .stCheckbox > label .stMarkdown { flex: 1 1 auto; }
+
+/* Style the slider to match the aesthetic */
+.stSidebar .stSlider > div {
+  padding: 6px 8px !important;
+  background: linear-gradient(135deg, rgba(255,242,226,0.04), rgba(255,242,226,0.02));
+  border-radius: 8px;
+  border: 1px solid rgba(255,242,226,0.06);
+}
+.stSidebar .stSlider input[type="range"] { accent-color: #8BA194; }
+
+/* Sidebar heading spacing */
+section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h3::before {
+  content: "⚙️";
+  font-size: 1.05rem;
 }
 
 .stSidebar .stSlider .css-1q8dd3e { /* slider track container fallback */
@@ -143,9 +174,9 @@ h1 {
   -webkit-text-fill-color: transparent;
   background-clip: text;
   font-weight: 800;
-  font-size: 2rem;
+  font-size: 1.85rem; /* slightly smaller for balance */
   margin: 0;
-  line-height: 1.1;
+  line-height: 1.05;
 }
 
 /* Compact header block */
@@ -158,13 +189,28 @@ h1 {
   margin: 0;
   line-height: 1.1;
 }
+.header-compact__icon { display:inline-block; vertical-align:middle; margin-right:0.9rem; }
+.header-compact__icon svg { vertical-align: middle; border-radius: 8px; box-shadow: 0 4px 12px rgba(75,90,65,0.06); }
 .header-compact__subtitle {
-  font-size: 0.92rem;
-  color: #666;
+  font-size: 0.95rem;
+  color: #6b6b63; /* slightly darker for better legibility */
   font-weight: 500;
   margin: 0.15rem 0 0 0;
   line-height: 1.2;
 }
+
+/* Make header icon larger and center-aligned like the screenshot */
+.header-compact .emoji { font-size: 2.2rem; margin-right: 0.4rem; vertical-align: middle; }
+
+/* Ensure header scales nicely on very large screens */
+@media (min-width: 1400px) {
+  .header-compact__title { font-size: 2.2rem; }
+  .header-compact__icon svg { width: 44px; height: 44px; }
+}
+
+/* Emphasize Document Input section */
+.block-container h2, .block-container h1 { color: #3e4a3f; font-weight: 800; }
+.block-container h2::before { content: "📁"; margin-right: 0.5rem; }
 
 /* Ensure emojis/icons remain visible inside gradient headings */
 h1 .emoji {
@@ -214,16 +260,19 @@ header[data-testid="stHeader"] [data-testid="collapsedControl"] path {
 }
 
 .stTabs [data-baseweb="tab"] {
-  height: 56px;
-  background: #f5f5f5;
-  border-radius: 16px 16px 0 0;
+  height: 44px; /* reduced to reduce visual weight */
+  background: #f7f7f7;
+  border-radius: 12px 12px 0 0;
   border: none;
-  padding: 0 28px;
+  padding: 0 20px;
   font-weight: 600;
-  font-size: 15px;
-  color: #666;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-size: 14px;
+  color: #555;
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+/* Make tab icons stand out and add small separators */
+.stTabs [data-baseweb="tab"] svg { margin-right: 8px; vertical-align: middle; }
 
 .stTabs [data-baseweb="tab"]:hover {
   background: linear-gradient(135deg, #4F633D15, #8BA19415);
@@ -234,7 +283,7 @@ header[data-testid="stHeader"] [data-testid="collapsedControl"] path {
 .stTabs [aria-selected="true"] {
   background: linear-gradient(135deg, #8BA194, #6b8a7e) !important;
   color: #FFF2E2 !important;
-  box-shadow: 0 6px 20px rgba(139, 161, 148, 0.40);
+  box-shadow: 0 6px 16px rgba(139, 161, 148, 0.28);
 }
 
 .stTabs [data-baseweb="tab-panel"] {
@@ -243,12 +292,12 @@ header[data-testid="stHeader"] [data-testid="collapsedControl"] path {
 
 /* ============ UPLOAD CONTAINER (single bordered card) ============ */
 .upload-container {
-  border: 1px solid rgba(139, 161, 148, 0.40);
-  background: rgba(255, 242, 226, 0.85);
-  border-radius: 14px;
-  padding: 0.75rem 1rem 0.85rem 1rem;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
-  margin-bottom: 0.6rem;
+  border: 1px solid rgba(139, 161, 148, 0.36);
+  background: rgba(255, 242, 226, 0.92);
+  border-radius: 12px;
+  padding: 0.6rem 0.9rem 0.6rem 0.9rem;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.04);
+  margin-bottom: 0.8rem;
 }
 
 .upload-container__title {
@@ -268,11 +317,11 @@ header[data-testid="stHeader"] [data-testid="collapsedControl"] path {
 }
 
 .upload-pane {
-  background: rgba(139, 161, 148, 0.08);
-  border: 1px dashed rgba(139, 161, 148, 0.45);
+  background: rgba(139, 161, 148, 0.06);
+  border: 1px dashed rgba(139, 161, 148, 0.35);
   border-radius: 10px;
-  padding: 0.6rem 0.7rem;
-  min-height: 90px;
+  padding: 0.5rem 0.6rem;
+  min-height: 88px;
 }
 
 .upload-pane__label {
@@ -281,6 +330,16 @@ header[data-testid="stHeader"] [data-testid="collapsedControl"] path {
   color: #4F633D;
   margin-bottom: 0.35rem;
 }
+
+/* Align browse button to the right in uploader for a clean affordance */
+[data-testid="stFileUploader"] .css-1kyxreq { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+[data-testid="stFileUploader"] .css-1kyxreq button { flex: 0 0 auto; }
+
+/* Metrics row spacing similar to screenshot */
+[data-testid="stMetric"] { min-width: 220px; margin-right: 12px; }
+
+/* Slightly reduce overall block padding for visual density similar to screenshot */
+.block-container { padding: 0.6rem 1.4rem 1rem 1.4rem; }
 
 /* ============ INPUT PANELS (side-by-side upload + existing) ============ */
 .input-panel {
@@ -409,23 +468,23 @@ header[data-testid="stHeader"] [data-testid="collapsedControl"] path {
   box-shadow: 0 4px 12px rgba(79, 99, 61, 0.25);
 }
 
-.stButton > button:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 24px rgba(79, 99, 61, 0.40);
+.stButton > button {
+  background: linear-gradient(135deg, #4F633D 0%, #5a7348 100%);
+  color: #FFF2E2;
+  border-radius: 12px;
+  border: none;
+  padding: 10px 22px;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 6px 14px rgba(79, 99, 61, 0.18);
 }
-
+.stButton > button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(79, 99, 61, 0.28);
+}
 .stButton > button:active {
   transform: translateY(-1px);
-}
-
-/* ============ METRICS & CARDS (compact) ============ */
-[data-testid="stMetric"] {
-  background: linear-gradient(135deg, #FFF2E2, #f8f4ed);
-  padding: 0.6rem 0.8rem;
-  border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
-  border: 1px solid rgba(139, 161, 148, 0.20);
-  transition: transform 0.2s ease;
 }
 
 [data-testid="stMetric"]:hover {
@@ -543,5 +602,45 @@ header { visibility: visible; }
   .stTabs [data-baseweb="tab"] { padding: 0 16px; font-size: 13px; }
   .upload-section [data-testid="stHorizontalBlock"] { grid-template-columns: 1fr; }
 }
+
+/* Mobile-first: collapse sidebar into a top panel and make content full-width */
+@media (max-width: 900px) {
+  section[data-testid="stSidebar"] {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100% !important;
+    height: auto !important;
+    z-index: 1200;
+    padding: 0.6rem 0.8rem !important;
+    border-right: none !important;
+    border-bottom: 1px solid rgba(79,99,61,0.06) !important;
+  }
+  .block-container {
+    margin-left: 0 !important;
+    width: 100% !important;
+    padding-top: 4.2rem !important; /* leave space for top sidebar */
+  }
+  header[data-testid="stHeader"] [data-testid="collapsedControl"] { display: none !important; }
+  .stTabs [data-baseweb="tab-list"] { overflow-x: auto; }
+  .upload-container, .input-panel { min-width: auto; }
+}
+
+/* Skip link for keyboard users (visible on focus) */
+.skip-link {
+  position: absolute;
+  left: -999px;
+  top: 8px;
+  background: #f7f7f7;
+  color: #2f3b2f;
+  padding: 8px 12px;
+  border-radius: 6px;
+  z-index: 2000;
+}
+.skip-link:focus { left: 12px; }
+
+/* Stronger focus outline for interactive elements */
+button:focus, a:focus, input:focus, select:focus, textarea:focus { outline: 3px solid rgba(139,161,148,0.18) !important; }
 </style>
 """
