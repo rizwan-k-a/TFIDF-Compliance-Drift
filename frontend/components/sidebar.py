@@ -14,12 +14,20 @@ def render_sidebar() -> dict:
 
     with st.sidebar:
         st.markdown('<div class="sidebar-compact">', unsafe_allow_html=True)
-        st.markdown("### ⚙️ Settings")
+        st.markdown(
+            """
+            <div class="sidebar-settings-header">
+                <span class="sidebar-settings-icon" aria-hidden="true">⚙️</span>
+                <span class="sidebar-settings-title">Settings</span>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
         keep_numbers = st.checkbox(
             "Keep numbers in analysis",
             value=True,
-            help="Preserve numerical values in TF-IDF processing",
+            help="Preserve numerical values in TF-IDF processing.",
         )
 
         use_lemma = st.checkbox(

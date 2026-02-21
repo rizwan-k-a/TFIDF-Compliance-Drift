@@ -55,6 +55,10 @@ def main() -> None:
     st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 
     cfg = render_sidebar()
+
+    # Center all main content inside a fixed-width container (excludes sidebar)
+    st.markdown('<div class="centered-container">', unsafe_allow_html=True)
+
     render_header()
 
     docs = upload_documents(cfg)
@@ -180,6 +184,8 @@ def main() -> None:
             shared_matrix=shared_all_vectors,
         )
 
+    # close main centered container
+    st.markdown('</div>', unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()

@@ -130,11 +130,13 @@ def upload_documents(cfg: dict) -> Dict[str, List[dict]]:
     with st.container():
         st.markdown("## Document Input")
 
-        col_internal, col_guidelines = st.columns(2)
+        col_internal, col_guidelines = st.columns([1, 1], gap="large")
 
         # LEFT COLUMN - INTERNAL DOCUMENTS
         with col_internal:
             st.markdown("### Internal Documents")
+            # wrapper used to enforce equal-height layout via CSS
+            st.markdown('<div class="upload-eq">', unsafe_allow_html=True)
             internal_tab_upload, internal_tab_existing = st.tabs(["Upload", "Choose Existing"])
 
             with internal_tab_upload:
@@ -162,9 +164,14 @@ def upload_documents(cfg: dict) -> Dict[str, List[dict]]:
                     load_files_to_session(selected_internal, "internal")
                     st.success("Loaded internal files.")
 
+            # close internal column wrapper
+            st.markdown('</div>', unsafe_allow_html=True)
+
         # RIGHT COLUMN - GUIDELINE DOCUMENTS
         with col_guidelines:
             st.markdown("### Guideline Documents")
+            # wrapper used to enforce equal-height layout via CSS
+            st.markdown('<div class="upload-eq">', unsafe_allow_html=True)
             guideline_tab_upload, guideline_tab_existing = st.tabs(["Upload", "Choose Existing"])
 
             with guideline_tab_upload:
@@ -191,6 +198,9 @@ def upload_documents(cfg: dict) -> Dict[str, List[dict]]:
                 if st.button("Load Guideline Files", key="load_guidelines", use_container_width=True):
                     load_files_to_session(selected_guidelines, "guideline")
                     st.success("Loaded guideline files.")
+
+            # close guideline column wrapper
+            st.markdown('</div>', unsafe_allow_html=True)
 
         def parse_uploaded(files, rate_key: str) -> List[dict]:
             """Parse uploaded files into doc dicts."""

@@ -9,21 +9,33 @@ html, body, [class*="css"], .stApp {
 }
 
 .block-container {
-  padding: 0.75rem 1.75rem 1rem 1.75rem;
+  /* authoritative content container for Streamlit main content */
+  padding: 0.75rem 2rem 1rem 2rem;
   background: linear-gradient(135deg, #FFF2E2 0%, #faf6ef 100%);
-  max-width: 1600px;
-  margin-left: auto;
-  margin-right: auto;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Centered container wrapper used in app.py to scope main content */
+.centered-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-left: 24px;
+  padding-right: 24px;
+  box-sizing: border-box;
   width: 100%;
 }
 
-/* Shift main content to account for sidebar width on larger screens without causing overflow */
+/* Ensure block-container remains centered and does not shift right */
 @media (min-width: 769px) {
   .block-container {
     box-sizing: border-box;
-    margin-left: 260px;
-    width: calc(100% - 260px);
-    max-width: calc(1600px - 260px);
+    margin: 0 auto !important;
+    width: 100%;
+    max-width: 1200px !important;
+    padding-top: 1rem;
   }
   /* avoid accidental horizontal scroll from small layout shifts */
   html, body { overflow-x: hidden; }
@@ -39,14 +51,19 @@ html, body, [class*="css"], .stApp {
 /* ============ SIDEBAR PREMIUM ============ */
 section[data-testid="stSidebar"] {
   /* soften sidebar tone and slightly reduce width to improve main content space */
-  background: linear-gradient(180deg, rgba(79,99,61,0.92) 0%, rgba(61,77,47,0.90) 100%);
-  border-right: none;
-  width: 260px !important;
+  background: #4F633D !important;
+  border-right: 1px solid #3f5131;
+  box-shadow: 3px 0 12px rgba(0, 0, 0, 0.12);
+  width: 312px !important;
+  min-width: 312px !important;
+  max-width: 312px !important;
 }
 section[data-testid="stSidebar"] > div:first-child {
-  background: transparent;
-  width: 260px !important;
-  padding: 1rem 0.85rem;
+  background: #4F633D !important;
+  width: 312px !important;
+  min-width: 312px !important;
+  max-width: 312px !important;
+  padding: 1.1rem 0.85rem 1rem 0.85rem;
 }
 
 /* Make sidebar controls use full available width and match reference spacing */
@@ -74,8 +91,8 @@ section[data-testid="stSidebar"] {
 }
 
 .stSidebar .stCheckbox > label {
-  background: rgba(255, 242, 226, 0.06) !important;
-  border: 1px solid rgba(255, 242, 226, 0.08) !important;
+  background: #5B7150 !important;
+  border: 1px solid #6f8463 !important;
   color: #FFF2E2 !important;
   font-weight: 600 !important;
   font-size: 0.95rem !important;
@@ -93,9 +110,9 @@ section[data-testid="stSidebar"] {
 /* Style the slider to match the aesthetic */
 .stSidebar .stSlider > div {
   padding: 6px 8px !important;
-  background: linear-gradient(135deg, rgba(255,242,226,0.04), rgba(255,242,226,0.02));
+  background: #5B7150;
   border-radius: 8px;
-  border: 1px solid rgba(255,242,226,0.06);
+  border: 1px solid #6f8463;
 }
 .stSidebar .stSlider input[type="range"] { accent-color: #8BA194; }
 
@@ -105,9 +122,111 @@ section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h3 {
   align-items: center;
   gap: 0.6rem;
 }
-section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h3::before {
-  content: "⚙️";
+
+.sidebar-settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.55rem;
+  margin: 0.25rem 0 0.9rem 0;
+}
+
+.sidebar-settings-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-size: 1.05rem;
+  line-height: 1;
+}
+
+.sidebar-settings-title {
+  color: #FFF2E2;
+  font-weight: 700;
+  font-size: 1.25rem;
+  letter-spacing: 0.02em;
+  line-height: 1.1;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.stSidebar .stCheckbox {
+  margin: 0 0 0.75rem 0 !important;
+}
+
+.stSidebar .stCheckbox > label {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 0.5rem !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  overflow: visible !important;
+}
+
+.stSidebar .stCheckbox > label .stMarkdown {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.stSidebar .stCheckbox > label .stMarkdown p {
+  margin: 0 !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stSidebar .stCheckbox [data-testid="stWidgetLabel"] {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 0.5rem !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.stSidebar .stCheckbox [data-testid="stWidgetLabel"] > div:first-child {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+
+.stSidebar .stCheckbox [data-testid="stWidgetLabel"] p {
+  margin: 0 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.stSidebar .stCheckbox > label [data-testid="stTooltipIcon"],
+.stSidebar .stCheckbox > label button {
+  margin-left: auto !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  align-self: center !important;
+  flex: 0 0 auto !important;
+  width: 20px !important;
+  height: 20px !important;
+}
+
+.stSidebar .stCheckbox [data-testid="stWidgetLabel"] [data-testid="stTooltipIcon"],
+.stSidebar .stCheckbox [data-testid="stWidgetLabel"] button,
+.stSidebar [data-testid="stSlider"] [data-testid="stWidgetLabel"] [data-testid="stTooltipIcon"],
+.stSidebar [data-testid="stSlider"] [data-testid="stWidgetLabel"] button {
+  position: static !important;
+  inset: auto !important;
+  margin-left: auto !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  align-self: center !important;
+  flex: 0 0 auto !important;
+  width: 20px !important;
+  height: 20px !important;
+}
+
+.stSidebar .stSlider,
+.stSidebar [data-testid="stSlider"] {
+  width: 100% !important;
+  margin: 0.35rem 0 0.8rem 0 !important;
 }
 
 .stSidebar .stSlider .css-1q8dd3e { /* slider track container fallback */
@@ -115,9 +234,7 @@ section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] h3::before 
 }
 
 /* Reduce top gap so header aligns visually closer to reference */
-.block-container {
-  padding-top: 0.4rem;
-}
+.block-container { padding-top: 0.4rem; }
 
 /* Slightly bump header toward top center */
 h1 {
@@ -142,16 +259,16 @@ h1 {
 }
 
 .stSidebar .stCheckbox > label {
-  background: rgba(255, 242, 226, 0.10);
+  background: #5B7150;
   padding: 8px 12px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 242, 226, 0.25);
+  border: 1px solid #748968;
   transition: all 0.3s ease;
 }
 .stSidebar .stCheckbox > label:hover {
-  background: rgba(255, 242, 226, 0.20);
-  border: 1px solid rgba(255, 242, 226, 0.35);
-  transform: translateX(4px);
+  background: #647a57;
+  border: 1px solid #829877;
+  transform: none;
 }
 
 .stSidebar hr {
@@ -161,7 +278,7 @@ h1 {
 
 /* Compact sidebar content spacing */
 .sidebar-compact {
-  padding-top: 0.25rem;
+  padding-top: 0.4rem;
 }
 .sidebar-compact h3 {
   margin: 0.5rem 0 0.75rem 0;
@@ -208,9 +325,45 @@ h1 {
   .header-compact__icon svg { width: 44px; height: 44px; }
 }
 
+/* Center header in viewport on larger screens for perfect alignment */
+@media (min-width: 769px) {
+
+    /* Keep header centered within the content container (no absolute positioning).
+      This ensures header aligns with the block-container grid without shifting the container. */
+    .block-container .header-compact {
+    position: relative !important;
+    left: 0 !important;
+    transform: none !important;
+    top: auto !important;
+    z-index: 950 !important;
+    width: 100% !important;
+    pointer-events: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    margin: 0 auto 0.6rem auto !important;
+  }
+
+  /* small top spacing so header doesn't collide with top chrome */
+  .block-container { padding-top: 1rem !important; }
+}
+
+/* Keep header in normal flow on small screens */
+@media (max-width: 768px) {
+  .header-compact { position: relative; transform: none; left: auto; top: auto; }
+}
+
 /* Emphasize Document Input section */
 .block-container h2, .block-container h1 { color: #3e4a3f; font-weight: 800; }
 .block-container h2::before { content: "📁"; margin-right: 0.5rem; }
+
+/* Ensure main section headings align to left edge of centered container */
+.centered-container h1, .centered-container h2, .centered-container h3, .centered-container .stSubheader {
+  text-align: left !important;
+  margin-left: 0 !important;
+}
 
 /* Ensure emojis/icons remain visible inside gradient headings */
 h1 .emoji {
@@ -339,7 +492,7 @@ header[data-testid="stHeader"] [data-testid="collapsedControl"] path {
 [data-testid="stMetric"] { min-width: 220px; margin-right: 12px; }
 
 /* Slightly reduce overall block padding for visual density similar to screenshot */
-.block-container { padding: 0.6rem 1.4rem 1rem 1.4rem; }
+.block-container { padding: 0.6rem 2rem 1rem 2rem; }
 
 /* ============ INPUT PANELS (side-by-side upload + existing) ============ */
 .input-panel {
@@ -349,6 +502,62 @@ header[data-testid="stHeader"] [data-testid="collapsedControl"] path {
   padding: 0.6rem 0.75rem;
   min-height: 140px;
 }
+
+/* ============ LAYOUT FIXES FOR ALIGNMENT ============ */
+/* ensure consistent centered max-width and symmetric padding */
+.block-container {
+  max-width: 1200px !important;
+  padding-left: 28px !important;
+  padding-right: 28px !important;
+}
+
+/* Keep section headings left-aligned with the content column edge */
+.block-container h2, .block-container h3, .block-container h1, .block-container .stSubheader {
+  text-align: left !important;
+  margin-left: 0 !important;
+}
+
+/* Tabs: keep in one row with even spacing and prevent wrapping */
+.stTabs [data-baseweb="tab-list"] {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  white-space: nowrap !important;
+  gap: 14px !important;
+  justify-content: space-between !important;
+  overflow-x: auto !important;
+}
+.stTabs [data-baseweb="tab"] { flex: 1 1 0 !important; text-align: center; }
+
+/* Equal-height upload columns: wrapper class used in component */
+
+.upload-eq { display: flex; flex-direction: column; height: 100%; width: 100%; box-sizing: border-box; }
+.upload-eq .upload-container, .upload-eq [data-testid="stFileUploader"], .upload-eq .input-panel {
+  height: 170px !important;
+  min-height: 170px !important;
+  max-height: 180px !important;
+  box-sizing: border-box !important;
+  padding: 0.45rem 0.6rem !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: stretch !important;
+}
+
+/* Ensure both upload boxes have identical visual dimensions within the .upload-eq scope */
+.upload-eq [data-testid="stFileUploader"] { width: 100% !important; height: 170px !important; min-height: 170px !important; }
+
+/* Align buttons to the same baseline and keep consistent sizing */
+.stButton > button { display: inline-flex !important; align-items: center !important; vertical-align: baseline !important; }
+
+/* Encourage column children to stretch so the upload wrappers match heights */
+.stApp [data-testid="stHorizontalBlock"] > div {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+}
+
+/* Prevent accidental overlapping text by ensuring header occupies flow */
+.header-compact { z-index: 10; }
 
 .input-panel__header {
   font-size: 0.9rem;
@@ -606,23 +815,17 @@ header { visibility: visible; }
 /* Mobile-first: collapse sidebar into a top panel and make content full-width */
 @media (max-width: 900px) {
   section[data-testid="stSidebar"] {
-    position: fixed !important;
-    top: 0;
-    left: 0;
-    right: 0;
-    width: 100% !important;
-    height: auto !important;
-    z-index: 1200;
-    padding: 0.6rem 0.8rem !important;
-    border-right: none !important;
-    border-bottom: 1px solid rgba(79,99,61,0.06) !important;
+    position: relative !important;
+    top: auto;
+    left: auto;
+    right: auto;
+    height: 100vh !important;
+    z-index: auto;
+    padding: 1.1rem 0.85rem 1rem 0.85rem !important;
+    border-right: 1px solid #3f5131 !important;
+    border-bottom: none !important;
   }
-  .block-container {
-    margin-left: 0 !important;
-    width: 100% !important;
-    padding-top: 4.2rem !important; /* leave space for top sidebar */
-  }
-  header[data-testid="stHeader"] [data-testid="collapsedControl"] { display: none !important; }
+  header[data-testid="stHeader"] [data-testid="collapsedControl"] { display: block !important; }
   .stTabs [data-baseweb="tab-list"] { overflow-x: auto; }
   .upload-container, .input-panel { min-width: auto; }
 }
@@ -640,7 +843,138 @@ header { visibility: visible; }
 }
 .skip-link:focus { left: 12px; }
 
+/* ============ SIDEBAR ALIGNMENT FINAL OVERRIDE ============ */
+html, body {
+  margin: 0 !important;
+  padding: 0 !important;
+  height: 100% !important;
+}
+
+.stApp,
+[data-testid="stAppViewContainer"] {
+  margin: 0 !important;
+  padding: 0 !important;
+  min-height: 100vh !important;
+}
+
+[data-testid="stAppViewContainer"] > .main {
+  margin: 0 !important;
+  padding-left: 0 !important;
+}
+
+section[data-testid="stSidebar"],
+section[data-testid="stSidebar"] > div:first-child {
+  width: 312px !important;
+  min-width: 312px !important;
+  max-width: 312px !important;
+  box-sizing: border-box !important;
+  overflow-x: hidden !important;
+  background: #4F633D !important;
+  height: 100vh !important;
+}
+
+section[data-testid="stSidebar"] {
+  margin: 0 !important;
+  padding: 0 !important;
+  min-height: 100vh !important;
+  border-right: 1px solid #3f5131 !important;
+  box-shadow: none !important;
+}
+
+section[data-testid="stSidebar"] > div:first-child {
+  margin: 0 !important;
+  padding: 1rem 0.7rem 1rem 0.7rem !important;
+  min-height: 100vh !important;
+}
+
+.stSidebar .stCheckbox {
+  margin: 0 0 0.65rem 0 !important;
+}
+
+.stSidebar .stCheckbox > label {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  padding: 8px 10px !important;
+  overflow: hidden !important;
+}
+
+.stSidebar .stCheckbox [data-testid="stWidgetLabel"],
+section[data-testid="stSidebar"] [data-testid="stSlider"] [data-testid="stWidgetLabel"] {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 0.45rem !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  padding-right: 8px !important;
+}
+
+.stSidebar .stCheckbox [data-testid="stWidgetLabel"] > div:first-child,
+section[data-testid="stSidebar"] [data-testid="stSlider"] [data-testid="stWidgetLabel"] > div:first-child {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+
+.stSidebar .stCheckbox [data-testid="stWidgetLabel"] p,
+section[data-testid="stSidebar"] [data-testid="stSlider"] [data-testid="stWidgetLabel"] p {
+  margin: 0 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+section[data-testid="stSidebar"] [data-testid="stWidgetLabel"] [data-testid="stTooltipIcon"],
+section[data-testid="stSidebar"] [data-testid="stWidgetLabel"] button {
+  position: static !important;
+  margin-left: auto !important;
+  margin-right: 0 !important;
+  flex: 0 0 20px !important;
+  width: 20px !important;
+  height: 20px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.stSidebar .stSlider,
+.stSidebar [data-testid="stSlider"] {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  margin: 0.35rem 0 0.8rem 0 !important;
+}
+
 /* Stronger focus outline for interactive elements */
 button:focus, a:focus, input:focus, select:focus, textarea:focus { outline: 3px solid rgba(139,161,148,0.18) !important; }
+
+/* ============ SIDEBAR WIDGET LABEL NORMALIZATION ============ */
+section[data-testid="stSidebar"] [data-testid="stWidgetLabel"] {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  padding-right: 8px !important;
+  gap: 0.5rem !important;
+}
+
+section[data-testid="stSidebar"] [data-testid="stWidgetLabel"] > div:first-child {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+
+section[data-testid="stSidebar"] [data-testid="stWidgetLabel"] p {
+  margin: 0 !important;
+}
+
+section[data-testid="stSidebar"] [data-testid="stWidgetLabel"] [data-testid="stTooltipIcon"],
+section[data-testid="stSidebar"] [data-testid="stWidgetLabel"] button {
+  margin-left: auto !important;
+  margin-right: 0 !important;
+  align-self: center !important;
+  flex: 0 0 auto !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
 </style>
 """
